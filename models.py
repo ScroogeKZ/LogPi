@@ -13,7 +13,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(256))
     role = db.Column(db.String(20), default='employee')  # employee, logist
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    is_active = db.Column(db.Boolean, default=True)
+    active = db.Column(db.Boolean, default=True)
     
     # Relationship
     orders = db.relationship('Order', backref='customer', lazy=True)
@@ -35,7 +35,7 @@ class Driver(db.Model):
     full_name = db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(20), nullable=False)
     vehicle_number = db.Column(db.String(20))
-    is_active = db.Column(db.Boolean, default=True)
+    active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationship

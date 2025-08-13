@@ -21,11 +21,10 @@
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="sidebar-brand">
-                <div class="brand-icon">
-                    <i class="fas fa-truck"></i>
+                <div class="brand-logo">
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="XPOM-KZ" style="height: 40px; width: auto;">
                 </div>
                 <div class="brand-text">
-                    <div class="brand-title">XPOM-KZ</div>
                     <div class="brand-subtitle">Панель управления</div>
                 </div>
             </div>
@@ -56,12 +55,6 @@
                             <span>Календарь отгрузок</span>
                         </a>
                     </li>
-                    <li class="menu-item">
-                        <a href="{{ url_for('admin_calendar') }}" class="menu-link {{ 'active' if request.endpoint == 'admin_calendar' }}">
-                            <i class="fas fa-calendar-alt"></i>
-                            <span>Календарь отгрузок</span>
-                        </a>
-                    </li>
                 </ul>
             </div>
 
@@ -78,6 +71,12 @@
                         <a href="{{ url_for('admin_analytics') }}" class="menu-link {{ 'active' if request.endpoint == 'admin_analytics' }}">
                             <i class="fas fa-chart-pie"></i>
                             <span>Статистика</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="{{ url_for('admin_financial_reports') }}" class="menu-link {{ 'active' if request.endpoint == 'admin_financial_reports' }}">
+                            <i class="fas fa-ruble-sign"></i>
+                            <span>Финансовые отчёты</span>
                         </a>
                     </li>
                 </ul>

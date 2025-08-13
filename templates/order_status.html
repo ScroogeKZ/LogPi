@@ -50,7 +50,7 @@
                                 </div>
                                 <div class="timeline-content">
                                     <h6>Заявка создана</h6>
-                                    <small>{{ order.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                                    <small>{{ order.created_at.strftime('%d.%m.%Y %H:%M') if order.created_at else 'Дата не указана' }}</small>
                                 </div>
                             </div>
                             
@@ -213,8 +213,8 @@
                                 <h6><i class="fas fa-info-circle"></i> Детали заказа</h6>
                                 <ul class="list-unstyled">
                                     <li><strong>Тип:</strong> {{ order.get_type_display() }}</li>
-                                    <li><strong>Создан:</strong> {{ order.created_at.strftime('%d.%m.%Y %H:%M') }}</li>
-                                    <li><strong>Обновлен:</strong> {{ order.updated_at.strftime('%d.%m.%Y %H:%M') }}</li>
+                                    <li><strong>Создан:</strong> {{ order.created_at.strftime('%d.%m.%Y %H:%M') if order.created_at else 'Дата не указана' }}</li>
+                                    <li><strong>Обновлен:</strong> {{ order.updated_at.strftime('%d.%m.%Y %H:%M') if order.updated_at else 'Дата не указана' }}</li>
                                     {% if order.price %}
                                     <li><strong>Стоимость:</strong> {{ "%.2f"|format(order.price) }} ₸</li>
                                     {% endif %}

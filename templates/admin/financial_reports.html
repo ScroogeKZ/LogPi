@@ -1,0 +1,255 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Финансовые отчёты - XPOM-KZ{% endblock %}
+
+{% block page_title %}Финансовые отчёты{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Report Controls -->
+<div class="content-card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="start_date" class="form-label">С даты</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="end_date" class="form-label">По дату</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="order_type" class="form-label">Направление</label>
+                        <select class="form-control" id="order_type" name="order_type">
+                            <option value="">Все направления</option>
+                            <option value="astana" {{ 'selected' if order_type == 'astana' }}>Астана</option>
+                            <option value="kazakhstan" {{ 'selected' if order_type == 'kazakhstan' }}>Казахстан</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="fas fa-filter"></i> Применить
+                        </button>
+                        <a href="{{ url_for('admin_financial_reports') }}" class="btn btn-outline">
+                            <i class="fas fa-undo"></i> Сбросить
+                        </a>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-4 text-end">
+                <button type="button" class="btn btn-success" onclick="exportToExcel()">
+                    <i class="fas fa-file-excel"></i> Экспорт в Excel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-primary">
+                <i class="fas fa-ruble-sign"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ "%.0f"|format(total_revenue or 0) }} ₸</h3>
+                <p>Общие расходы</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-success">
+                <i class="fas fa-box"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ total_orders }}</h3>
+                <p>Всего заказов</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-info">
+                <i class="fas fa-calculator"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ "%.0f"|format(avg_order_value or 0) }} ₸</h3>
+                <p>Средний чек</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-warning">
+                <i class="fas fa-truck"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ active_drivers }}</h3>
+                <p>Активных водителей</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="content-card">
+            <div class="card-header">
+                <h5 class="card-title">Расходы по направлениям</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="revenueByTypeChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="content-card">
+            <div class="card-header">
+                <h5 class="card-title">Динамика расходов</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="monthlyRevenueChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Tables -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="content-card">
+            <div class="card-header">
+                <h5 class="card-title">Топ водителей по стоимости услуг</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Водитель</th>
+                                <th>Заказов</th>
+                                <th class="text-end">Стоимость</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for driver in top_drivers %}
+                            <tr>
+                                <td>{{ driver.name }}</td>
+                                <td>{{ driver.order_count }}</td>
+                                <td class="text-end">{{ "%.0f"|format(driver.revenue) }} ₸</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="content-card">
+            <div class="card-header">
+                <h5 class="card-title">Статистика по дням недели</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>День недели</th>
+                                <th>Заказов</th>
+                                <th class="text-end">Расходы</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for day in weekly_stats %}
+                            <tr>
+                                <td>{{ day.day_name }}</td>
+                                <td>{{ day.order_count }}</td>
+                                <td class="text-end">{{ "%.0f"|format(day.revenue) }} ₸</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Revenue by Type Chart
+const revenueByTypeCtx = document.getElementById('revenueByTypeChart').getContext('2d');
+new Chart(revenueByTypeCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ revenue_by_type_labels | safe }},
+        datasets: [{
+            data: {{ revenue_by_type_data | safe }},
+            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Monthly Revenue Chart
+const monthlyRevenueCtx = document.getElementById('monthlyRevenueChart').getContext('2d');
+new Chart(monthlyRevenueCtx, {
+    type: 'line',
+    data: {
+        labels: {{ monthly_labels | safe }},
+        datasets: [{
+            label: 'Расходы',
+            data: {{ monthly_revenue_data | safe }},
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return value.toLocaleString() + ' ₸';
+                    }
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+
+function exportToExcel() {
+    const params = new URLSearchParams(window.location.search);
+    params.set('export', 'excel');
+    window.location.href = '/admin/financial_reports?' + params.toString();
+}
+</script>
+{% endblock %}

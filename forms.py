@@ -8,7 +8,6 @@ class OrderForm(FlaskForm):
     # Customer information
     customer_name = StringField('Ф.И.О.', validators=[DataRequired(), Length(min=2, max=100)])
     customer_phone = StringField('Номер телефона', validators=[DataRequired(), Length(min=10, max=20)])
-    customer_email = StringField('Email', validators=[Optional(), Email()])
     
     # Pickup details
     pickup_address = TextAreaField('Адрес погрузки', validators=[DataRequired()], widget=TextArea())
@@ -61,7 +60,7 @@ class AdminOrderForm(FlaskForm):
     def __init__(self, *args, **kwargs):
         super(AdminOrderForm, self).__init__(*args, **kwargs)
         # Populate driver choices
-        drivers = Driver.query.filter_by(is_active=True).all()
+        drivers = Driver.query.filter_by(active=True).all()
         self.driver_id.choices = [(0, 'Не назначен')] + [(d.id, f"{d.full_name} ({d.vehicle_number})") for d in drivers]
 
 class DriverForm(FlaskForm):

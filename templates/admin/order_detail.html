@@ -227,6 +227,7 @@
                             </select>
                         </div>
                         
+                        {% if current_user.is_logist() %}
                         <div class="col-md-6 mb-3">
                             <label for="driver_id" class="form-label">Водитель</label>
                             <select class="form-control" id="driver_id" name="driver_id">
@@ -238,12 +239,39 @@
                                 {% endfor %}
                             </select>
                         </div>
+                        {% else %}
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Водитель</label>
+                            <div class="form-control-plaintext">
+                                {% if order.assigned_driver %}
+                                    {{ order.assigned_driver.full_name }} ({{ order.assigned_driver.vehicle_number }})
+                                {% else %}
+                                    Не назначен
+                                {% endif %}
+                                <small class="text-muted d-block">Только логисты могут назначать водителей</small>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
                     
+                    {% if current_user.is_logist() %}
                     <div class="mb-3">
                         <label for="price" class="form-label">Стоимость доставки (₸)</label>
                         <input type="number" class="form-control" id="price" name="price" step="0.01" min="0" value="{{ order.price or '' }}">
                     </div>
+                    {% else %}
+                    <div class="mb-3">
+                        <label class="form-label">Стоимость доставки (₸)</label>
+                        <div class="form-control-plaintext">
+                            {% if order.price %}
+                                {{ order.price }} ₸
+                            {% else %}
+                                Не указана
+                            {% endif %}
+                            <small class="text-muted d-block">Только логисты могут устанавливать цену</small>
+                        </div>
+                    </div>
+                    {% endif %}
                     
                     <div class="mb-3">
                         <label for="internal_comments" class="form-label">Внутренние комментарии</label>

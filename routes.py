@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify
+from flask import render_template, request, redirect, url_for, flash, jsonify, send_file, make_response
 from flask_login import login_user, logout_user, login_required, current_user
 from app import app, db
 from models import User, Order, Driver, OrderStatusHistory
@@ -8,6 +8,8 @@ from telegram_bot import send_telegram_notification
 from datetime import datetime, timedelta
 from sqlalchemy import func, extract
 import logging
+import csv
+from io import StringIO
 
 @app.route('/')
 def index():
@@ -36,7 +38,7 @@ def submit_order():
             order = Order(
                 customer_name=form.customer_name.data,
                 customer_phone=form.customer_phone.data,
-                customer_email=form.customer_email.data,
+                customer_email=None,  # Email field removed from form
                 order_type=form.order_type.data,
                 pickup_address=form.pickup_address.data,
                 pickup_contact=form.pickup_contact.data,
@@ -244,7 +246,7 @@ def admin_order_detail(order_id):
         return redirect(url_for('index'))
     
     order = Order.query.get_or_404(order_id)
-    drivers = Driver.query.filter_by(is_active=True).all()
+    drivers = Driver.query.filter_by(active=True).all()
     
     return render_template('admin/order_detail.html', order=order, drivers=drivers)
 
@@ -260,15 +262,18 @@ def admin_update_order(order_id):
         
         # Update order fields
         order.status = request.form.get('status')
-        order.price = float(request.form.get('price')) if request.form.get('price') else None
         order.internal_comments = request.form.get('internal_comments')
         
-        # Handle driver assignment
-        driver_id = request.form.get('driver_id')
-        if driver_id and driver_id != '0':
-            order.driver_id = int(driver_id)
-        else:
-            order.driver_id = None
+        # Only logists can update price and driver assignment
+        if current_user.is_logist():
+            order.price = float(request.form.get('price')) if request.form.get('price') else None
+            
+            # Handle driver assignment
+            driver_id = request.form.get('driver_id')
+            if driver_id and driver_id != '0':
+                order.driver_id = int(driver_id)
+            else:
+                order.driver_id = None
             
         order.updated_at = datetime.utcnow()
         
@@ -407,6 +412,156 @@ def admin_analytics():
                          monthly_data=monthly_data, 
                          status_data=status_data)
 
+@app.route('/admin/financial_reports')
+@login_required
+def admin_financial_reports():
+    if not current_user.is_logist():
+        flash('У вас нет прав доступа к финансовым отчётам', 'error')
+        return redirect(url_for('index'))
+    
+    # Get filter parameters
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    order_type = request.args.get('order_type')
+    export_format = request.args.get('export')
+    
+    # Set default date range (last 30 days)
+    if not start_date or not end_date:
+        end_date = datetime.now().date()
+        start_date = end_date - timedelta(days=30)
+    else:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+    
+    # Build query
+    query = Order.query.filter(
+        Order.created_at >= start_date,
+        Order.created_at <= end_date + timedelta(days=1),
+        Order.price.isnot(None)
+    )
+    
+    if order_type:
+        query = query.filter_by(order_type=order_type)
+    
+    orders = query.all()
+    
+    # Calculate summary statistics (expenses for the company)
+    total_expenses = sum(order.price for order in orders if order.price)
+    total_orders = len(orders)
+    avg_order_value = total_expenses / total_orders if total_orders > 0 else 0
+    active_drivers = Driver.query.filter_by(active=True).count()
+    
+    # Expenses by type (company logistics costs)
+    expenses_by_type = {}
+    for order in orders:
+        order_type_key = order.order_type
+        if order_type_key not in expenses_by_type:
+            expenses_by_type[order_type_key] = 0
+        expenses_by_type[order_type_key] += order.price or 0
+    
+    revenue_by_type_labels = ['Астана' if k == 'astana' else 'Казахстан' for k in expenses_by_type.keys()]
+    revenue_by_type_data = list(expenses_by_type.values())
+    
+    # Monthly expenses data
+    monthly_expenses = {}
+    for order in orders:
+        month_key = order.created_at.strftime('%Y-%m')
+        if month_key not in monthly_expenses:
+            monthly_expenses[month_key] = 0
+        monthly_expenses[month_key] += order.price or 0
+    
+    monthly_labels = [datetime.strptime(k, '%Y-%m').strftime('%b %Y') for k in sorted(monthly_expenses.keys())]
+    monthly_revenue_data = [monthly_expenses[k] for k in sorted(monthly_expenses.keys())]
+    
+    # Top drivers by service costs (company expenses)
+    driver_stats = {}
+    for order in orders:
+        if order.assigned_driver:
+            driver_id = order.assigned_driver.id
+            if driver_id not in driver_stats:
+                driver_stats[driver_id] = {
+                    'name': order.assigned_driver.full_name,
+                    'order_count': 0,
+                    'revenue': 0  # keeping key name for template compatibility
+                }
+            driver_stats[driver_id]['order_count'] += 1
+            driver_stats[driver_id]['revenue'] += order.price or 0
+    
+    top_drivers = sorted(driver_stats.values(), key=lambda x: x['revenue'], reverse=True)[:5]
+    
+    # Weekly expenses statistics
+    weekly_stats = {}
+    for order in orders:
+        day_name = order.created_at.strftime('%A')
+        day_name_ru = {
+            'Monday': 'Понедельник',
+            'Tuesday': 'Вторник', 
+            'Wednesday': 'Среда',
+            'Thursday': 'Четверг',
+            'Friday': 'Пятница',
+            'Saturday': 'Суббота',
+            'Sunday': 'Воскресенье'
+        }.get(day_name, day_name)
+        
+        if day_name_ru not in weekly_stats:
+            weekly_stats[day_name_ru] = {'day_name': day_name_ru, 'order_count': 0, 'revenue': 0}  # keeping key name for template compatibility
+        weekly_stats[day_name_ru]['order_count'] += 1
+        weekly_stats[day_name_ru]['revenue'] += order.price or 0
+    
+    weekly_stats = list(weekly_stats.values())
+    
+    # Export to CSV if requested
+    if export_format == 'excel':
+        return generate_csv_report(orders, start_date, end_date)
+    
+    return render_template('admin/financial_reports.html',
+                         start_date=start_date,
+                         end_date=end_date,
+                         order_type=order_type,
+                         total_revenue=total_expenses,
+                         total_orders=total_orders,
+                         avg_order_value=avg_order_value,
+                         active_drivers=active_drivers,
+                         revenue_by_type_labels=revenue_by_type_labels,
+                         revenue_by_type_data=revenue_by_type_data,
+                         monthly_labels=monthly_labels,
+                         monthly_revenue_data=monthly_revenue_data,
+                         top_drivers=top_drivers,
+                         weekly_stats=weekly_stats)
+
+def generate_csv_report(orders, start_date, end_date):
+    """Generate CSV report for financial data"""
+    output = StringIO()
+    writer = csv.writer(output)
+    
+    # Write header
+    writer.writerow([
+        'Номер заказа', 'Дата создания', 'Клиент', 'Направление', 
+        'Откуда', 'Куда', 'Статус', 'Водитель', 'Стоимость'
+    ])
+    
+    # Write data
+    for order in orders:
+        writer.writerow([
+            order.tracking_number,
+            order.created_at.strftime('%d.%m.%Y %H:%M'),
+            order.customer_name,
+            'Астана' if order.order_type == 'astana' else 'Казахстан',
+            order.pickup_address,
+            order.delivery_address,
+            order.get_status_display(),
+            order.assigned_driver.full_name if order.assigned_driver else 'Не назначен',
+            f'{order.price:.0f}' if order.price else '0'
+        ])
+    
+    # Prepare response
+    output.seek(0)
+    response = make_response(output.getvalue())
+    response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+    response.headers['Content-Disposition'] = f'attachment; filename=financial_report_{start_date}_{end_date}.csv'
+    
+    return response
+
 @app.route('/admin/calendar')
 @login_required
 def admin_calendar():
@@ -421,7 +576,7 @@ def admin_calendar():
     ).all()
     
     # Get active drivers
-    drivers = Driver.query.filter(Driver.is_active == True).all()
+    drivers = Driver.query.filter(Driver.active == True).all()
     
     return render_template('admin/calendar.html', 
                          available_orders=available_orders, 
