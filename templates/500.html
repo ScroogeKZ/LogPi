@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Внутренняя ошибка сервера - XPOM-KZ{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="error-page">
+                <h1 class="display-1 text-danger">500</h1>
+                <h3 class="mb-3">Внутренняя ошибка сервера</h3>
+                <p class="text-muted mb-4">
+                    Произошла внутренняя ошибка сервера. Мы уже работаем над устранением проблемы.
+                </p>
+                <div class="d-grid gap-2 d-md-block">
+                    <a href="{{ url_for('index') }}" class="btn btn-primary">
+                        <i class="fas fa-home"></i> На главную
+                    </a>
+                    <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Назад
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

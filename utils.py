@@ -44,21 +44,22 @@ def calculate_days_ago(dt):
     else:
         return f"{days} дней назад"
 
-# Register template filters
-from app import app
+# Template filters registration function
+def register_template_filters(app):
+    """Register custom template filters with the Flask app"""
+    
+    @app.template_filter('format_phone')
+    def format_phone_filter(phone):
+        return format_phone(phone)
 
-@app.template_filter('format_phone')
-def format_phone_filter(phone):
-    return format_phone(phone)
+    @app.template_filter('format_datetime')
+    def format_datetime_filter(dt):
+        return format_datetime(dt)
 
-@app.template_filter('format_datetime')
-def format_datetime_filter(dt):
-    return format_datetime(dt)
+    @app.template_filter('format_date')
+    def format_date_filter(dt):
+        return format_date(dt)
 
-@app.template_filter('format_date')
-def format_date_filter(dt):
-    return format_date(dt)
-
-@app.template_filter('days_ago')
-def days_ago_filter(dt):
-    return calculate_days_ago(dt)
+    @app.template_filter('days_ago')
+    def days_ago_filter(dt):
+        return calculate_days_ago(dt)

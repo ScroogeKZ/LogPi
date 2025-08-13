@@ -2,272 +2,260 @@
 
 {% block title %}Заказ {{ order.tracking_number }} - XPOM-KZ{% endblock %}
 
+{% block page_title %}Детали заказа{% endblock %}
+
 {% block content %}
-<div class="container-fluid py-4">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 mb-0">
-                <i class="fas fa-edit text-primary"></i>
-                Редактирование заказа
-            </h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Панель управления</a></li>
-                    <li class="breadcrumb-item"><a href="{{ url_for('admin_orders') }}">Заказы</a></li>
-                    <li class="breadcrumb-item active">{{ order.tracking_number }}</li>
-                </ol>
-            </nav>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="{{ url_for('order_success', tracking_number=order.tracking_number) }}" 
-               target="_blank" class="btn btn-outline-info">
-                <i class="fas fa-eye"></i> Просмотр заказа
-            </a>
-            <a href="{{ url_for('admin_orders') }}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left"></i> Назад к списку
-            </a>
-        </div>
-    </div>
-
-    <div class="row">
-        <!-- Order Management Form -->
-        <div class="col-lg-8">
-            <div class="card shadow mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-cog"></i> Управление заказом {{ order.tracking_number }}
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <form method="POST" action="{{ url_for('admin_update_order', order_id=order.id) }}">
-                        {{ form.hidden_tag() }}
-                        
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    {{ form.status.label(class="form-label required") }}
-                                    {{ form.status(class="form-select") }}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    {{ form.price.label(class="form-label") }}
-                                    <div class="input-group">
-                                        {{ form.price(class="form-control", placeholder="0.00") }}
-                                        <span class="input-group-text">₸</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            {{ form.driver_id.label(class="form-label") }}
-                            {{ form.driver_id(class="form-select") }}
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    {{ form.pickup_date.label(class="form-label") }}
-                                    {{ form.pickup_date(class="form-control", type="datetime-local") }}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    {{ form.delivery_date.label(class="form-label") }}
-                                    {{ form.delivery_date(class="form-control", type="datetime-local") }}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            {{ form.internal_comments.label(class="form-label") }}
-                            {{ form.internal_comments(class="form-control", rows="4", placeholder="Внутренние комментарии для логистов...") }}
-                        </div>
-                        
-                        <div class="d-flex justify-content-between">
-                            <button type="submit" class="btn btn-success btn-lg">
-                                <i class="fas fa-save"></i> Сохранить изменения
-                            </button>
-                            <button type="button" class="btn btn-outline-danger" onclick="confirmCancel()">
-                                <i class="fas fa-ban"></i> Отменить заказ
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
+<div class="row">
+    <div class="col-lg-8">
         <!-- Order Information -->
-        <div class="col-lg-4">
-            <!-- Order Status -->
-            <div class="card shadow mb-4">
-                <div class="card-header">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-info-circle"></i> Информация о заказе
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <dl class="row">
-                        <dt class="col-sm-5">Номер:</dt>
-                        <dd class="col-sm-7"><strong>{{ order.tracking_number }}</strong></dd>
-                        
-                        <dt class="col-sm-5">Тип:</dt>
-                        <dd class="col-sm-7">
-                            <span class="badge bg-{{ 'success' if order.order_type == 'astana' else 'primary' }}">
-                                {{ order.get_type_display() }}
-                            </span>
-                        </dd>
-                        
-                        <dt class="col-sm-5">Создан:</dt>
-                        <dd class="col-sm-7">{{ order.created_at.strftime('%d.%m.%Y %H:%M') }}</dd>
-                        
-                        <dt class="col-sm-5">Обновлен:</dt>
-                        <dd class="col-sm-7">{{ order.updated_at.strftime('%d.%m.%Y %H:%M') }}</dd>
-                    </dl>
+        <div class="content-card mb-4">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-info-circle"></i>
+                    Информация о заказе {{ order.tracking_number }}
+                </h3>
+                <span class="status-badge status-{{ order.status }}">
+                    {{ order.get_status_display() }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl>
+                            <dt>Заказчик:</dt>
+                            <dd>{{ order.customer_name }}</dd>
+                            
+                            <dt>Телефон:</dt>
+                            <dd>{{ order.customer_phone | format_phone }}</dd>
+                            
+                            {% if order.customer_email %}
+                            <dt>Email:</dt>
+                            <dd>{{ order.customer_email }}</dd>
+                            {% endif %}
+                            
+                            <dt>Тип доставки:</dt>
+                            <dd>
+                                {% if order.order_type == 'astana' %}
+                                    <span class="badge bg-success">Астана</span>
+                                {% else %}
+                                    <span class="badge bg-primary">Казахстан</span>
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl>
+                            <dt>Создан:</dt>
+                            <dd>{{ order.created_at.strftime('%d.%m.%Y %H:%M') }}</dd>
+                            
+                            {% if order.updated_at %}
+                            <dt>Обновлен:</dt>
+                            <dd>{{ order.updated_at.strftime('%d.%m.%Y %H:%M') }}</dd>
+                            {% endif %}
+                            
+                            {% if order.price %}
+                            <dt>Стоимость:</dt>
+                            <dd>{{ order.price }} ₸</dd>
+                            {% endif %}
+                            
+                            {% if order.assigned_driver %}
+                            <dt>Водитель:</dt>
+                            <dd>{{ order.assigned_driver.full_name }}</dd>
+                            {% endif %}
+                        </dl>
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Customer Information -->
-            <div class="card shadow mb-4">
-                <div class="card-header">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-user"></i> Информация о клиенте
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <dl class="row">
-                        <dt class="col-sm-4">Имя:</dt>
-                        <dd class="col-sm-8">{{ order.customer_name }}</dd>
-                        
-                        <dt class="col-sm-4">Телефон:</dt>
-                        <dd class="col-sm-8">
-                            <a href="tel:{{ order.customer_phone }}">{{ order.customer_phone | format_phone }}</a>
-                        </dd>
-                        
-                        {% if order.customer_email %}
-                        <dt class="col-sm-4">Email:</dt>
-                        <dd class="col-sm-8">
-                            <a href="mailto:{{ order.customer_email }}">{{ order.customer_email }}</a>
-                        </dd>
-                        {% endif %}
-                    </dl>
-                </div>
+        <!-- Cargo Information -->
+        <div class="content-card mb-4">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-box"></i>
+                    Информация о грузе
+                </h3>
             </div>
-
-            <!-- Cargo Information -->
-            <div class="card shadow">
-                <div class="card-header">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-box"></i> Информация о грузе
-                    </h6>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <strong>Описание груза:</strong>
+                        <p class="mt-2">{{ order.cargo_description }}</p>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <p><strong>Описание:</strong></p>
-                    <p class="text-muted">{{ order.cargo_description }}</p>
+                
+                {% if order.cargo_weight or order.cargo_volume or order.cargo_dimensions %}
+                <div class="row">
+                    {% if order.cargo_weight %}
+                    <div class="col-md-4">
+                        <strong>Вес:</strong> {{ order.cargo_weight }} кг
+                    </div>
+                    {% endif %}
                     
-                    {% if order.cargo_weight or order.cargo_volume or order.cargo_dimensions %}
-                    <dl class="row">
-                        {% if order.cargo_weight %}
-                        <dt class="col-sm-4">Вес:</dt>
-                        <dd class="col-sm-8">{{ order.cargo_weight }} кг</dd>
-                        {% endif %}
-                        
-                        {% if order.cargo_volume %}
-                        <dt class="col-sm-4">Объем:</dt>
-                        <dd class="col-sm-8">{{ order.cargo_volume }} м³</dd>
-                        {% endif %}
-                        
-                        {% if order.cargo_dimensions %}
-                        <dt class="col-sm-4">Габариты:</dt>
-                        <dd class="col-sm-8">{{ order.cargo_dimensions }}</dd>
-                        {% endif %}
-                    </dl>
+                    {% if order.cargo_volume %}
+                    <div class="col-md-4">
+                        <strong>Объем:</strong> {{ order.cargo_volume }} м³
+                    </div>
+                    {% endif %}
+                    
+                    {% if order.cargo_dimensions %}
+                    <div class="col-md-4">
+                        <strong>Габариты:</strong> {{ order.cargo_dimensions }}
+                    </div>
                     {% endif %}
                 </div>
+                {% endif %}
             </div>
         </div>
-    </div>
 
-    <!-- Route Information -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card shadow">
-                <div class="card-header">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-route"></i> Маршрут доставки
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="route-section">
-                                <h6 class="text-success">
-                                    <i class="fas fa-map-marker-alt"></i> Место забора
-                                </h6>
-                                <address class="mb-2">{{ order.pickup_address }}</address>
-                                {% if order.pickup_contact %}
-                                <p class="mb-1"><strong>Контакт:</strong> {{ order.pickup_contact }}</p>
-                                {% endif %}
-                                {% if order.pickup_phone %}
-                                <p class="mb-0"><strong>Телефон:</strong> {{ order.pickup_phone | format_phone }}</p>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="route-section">
-                                <h6 class="text-danger">
-                                    <i class="fas fa-map-marker-alt"></i> Место доставки
-                                </h6>
-                                <address class="mb-2">{{ order.delivery_address }}</address>
-                                {% if order.delivery_contact %}
-                                <p class="mb-1"><strong>Контакт:</strong> {{ order.delivery_contact }}</p>
-                                {% endif %}
-                                {% if order.delivery_phone %}
-                                <p class="mb-0"><strong>Телефон:</strong> {{ order.delivery_phone | format_phone }}</p>
-                                {% endif %}
-                            </div>
-                        </div>
+        <!-- Addresses -->
+        <div class="content-card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-map-marker-alt"></i>
+                    Адреса
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Забор груза</h6>
+                        <address>
+                            {{ order.pickup_address }}<br>
+                            {% if order.pickup_contact %}
+                                <strong>Контакт:</strong> {{ order.pickup_contact }}<br>
+                            {% endif %}
+                            {% if order.pickup_phone %}
+                                <strong>Телефон:</strong> {{ order.pickup_phone | format_phone }}
+                            {% endif %}
+                        </address>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-success">Доставка груза</h6>
+                        <address>
+                            {{ order.delivery_address }}<br>
+                            {% if order.delivery_contact %}
+                                <strong>Контакт:</strong> {{ order.delivery_contact }}<br>
+                            {% endif %}
+                            {% if order.delivery_phone %}
+                                <strong>Телефон:</strong> {{ order.delivery_phone | format_phone }}
+                            {% endif %}
+                        </address>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <div class="col-lg-4">
+        <!-- Actions -->
+        <div class="content-card mb-4">
+            <div class="card-header">
+                <h3 class="card-title">Действия</h3>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#updateOrderModal">
+                        <i class="fas fa-edit"></i> Редактировать заказ
+                    </button>
+                    
+                    {% if order.status not in ['delivered', 'cancelled'] %}
+                    <form method="POST" action="{{ url_for('admin_complete_order', order_id=order.id) }}" style="display: inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn btn-success w-100" onclick="return confirm('Отметить заказ как выполненный?')">
+                            <i class="fas fa-check"></i> Отметить выполненным
+                        </button>
+                    </form>
+                    {% endif %}
+                    
+                    <a href="{{ url_for('admin_orders') }}" class="btn btn-outline">
+                        <i class="fas fa-arrow-left"></i> Назад к списку
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schedule Information -->
+        {% if order.scheduled_pickup_date or order.scheduled_delivery_date %}
+        <div class="content-card mb-4">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-calendar-alt"></i>
+                    Планирование
+                </h3>
+            </div>
+            <div class="card-body">
+                {% if order.scheduled_pickup_date %}
+                <div class="mb-2">
+                    <strong>Плановая дата забора:</strong><br>
+                    {{ order.scheduled_pickup_date.strftime('%d.%m.%Y') }}
+                </div>
+                {% endif %}
+                
+                {% if order.scheduled_delivery_date %}
+                <div class="mb-2">
+                    <strong>Плановая дата доставки:</strong><br>
+                    {{ order.scheduled_delivery_date.strftime('%d.%m.%Y') }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
 </div>
-{% endblock %}
 
-{% block extra_scripts %}
-<script>
-function confirmCancel() {
-    if (confirm('Вы уверены, что хотите отменить этот заказ?')) {
-        // Update status to cancelled and submit form
-        document.querySelector('select[name="status"]').value = 'cancelled';
-        document.querySelector('form').submit();
-    }
-}
-
-// Auto-save functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form');
-    const inputs = form.querySelectorAll('input, select, textarea');
-    
-    inputs.forEach(input => {
-        input.addEventListener('change', function() {
-            // Visual feedback for unsaved changes
-            const submitBtn = form.querySelector('button[type="submit"]');
-            submitBtn.classList.add('btn-warning');
-            submitBtn.innerHTML = '<i class="fas fa-save"></i> Сохранить изменения*';
-        });
-    });
-    
-    // Reset button state after save
-    form.addEventListener('submit', function() {
-        const submitBtn = form.querySelector('button[type="submit"]');
-        submitBtn.classList.remove('btn-warning');
-        submitBtn.classList.add('btn-success');
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Сохранение...';
-    });
-});
-</script>
+<!-- Update Order Modal -->
+<div class="modal fade" id="updateOrderModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактировать заказ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin_update_order', order_id=order.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="status" class="form-label">Статус</label>
+                            <select class="form-control" id="status" name="status" required>
+                                <option value="new" {{ 'selected' if order.status == 'new' }}>Новая заявка</option>
+                                <option value="confirmed" {{ 'selected' if order.status == 'confirmed' }}>Подтверждена</option>
+                                <option value="in_progress" {{ 'selected' if order.status == 'in_progress' }}>В процессе доставки</option>
+                                <option value="delivered" {{ 'selected' if order.status == 'delivered' }}>Доставлена</option>
+                                <option value="cancelled" {{ 'selected' if order.status == 'cancelled' }}>Отменена</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="driver_id" class="form-label">Водитель</label>
+                            <select class="form-control" id="driver_id" name="driver_id">
+                                <option value="0">Не назначен</option>
+                                {% for driver in drivers %}
+                                <option value="{{ driver.id }}" {{ 'selected' if order.driver_id == driver.id }}>
+                                    {{ driver.full_name }} ({{ driver.vehicle_number }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="price" class="form-label">Стоимость доставки (₸)</label>
+                        <input type="number" class="form-control" id="price" name="price" step="0.01" min="0" value="{{ order.price or '' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="internal_comments" class="form-label">Внутренние комментарии</label>
+                        <textarea class="form-control" id="internal_comments" name="internal_comments" rows="3">{{ order.internal_comments or '' }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}

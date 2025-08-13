@@ -1,0 +1,481 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Календарь отгрузок - XPOM-KZ{% endblock %}
+
+{% block page_title %}Календарь отгрузок{% endblock %}
+
+{% block extra_head %}
+<!-- FullCalendar CSS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/locales/ru.global.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Calendar Controls -->
+<div class="content-card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline" id="prevBtn">
+                        <i class="fas fa-chevron-left"></i> Предыдущий
+                    </button>
+                    <button type="button" class="btn btn-outline" id="todayBtn">
+                        Сегодня
+                    </button>
+                    <button type="button" class="btn btn-outline" id="nextBtn">
+                        Следующий <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                <div class="btn-group ms-3" role="group">
+                    <button type="button" class="btn btn-primary" id="monthView">
+                        Месяц
+                    </button>
+                    <button type="button" class="btn btn-outline" id="weekView">
+                        Неделя
+                    </button>
+                    <button type="button" class="btn btn-outline" id="dayView">
+                        День
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#scheduleModal">
+                    <i class="fas fa-plus"></i> Запланировать отгрузку
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Calendar Legend -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="content-card">
+            <div class="card-body">
+                <h6 class="card-title mb-3">Легенда</h6>
+                <div class="row">
+                    <div class="col-md-3 col-6 mb-2">
+                        <div class="d-flex align-items-center">
+                            <div class="legend-color" style="background: #3b82f6;"></div>
+                            <span class="ms-2">Забор груза</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-2">
+                        <div class="d-flex align-items-center">
+                            <div class="legend-color" style="background: #10b981;"></div>
+                            <span class="ms-2">Доставка</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-2">
+                        <div class="d-flex align-items-center">
+                            <div class="legend-color" style="background: #f59e0b;"></div>
+                            <span class="ms-2">Просрочено</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-2">
+                        <div class="d-flex align-items-center">
+                            <div class="legend-color" style="background: #ef4444;"></div>
+                            <span class="ms-2">Отменено</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Calendar -->
+<div class="content-card">
+    <div class="card-body">
+        <div id="calendar"></div>
+    </div>
+</div>
+
+<!-- Schedule Modal -->
+<div class="modal fade" id="scheduleModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Запланировать отгрузку</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="scheduleForm" method="POST" action="{{ url_for('admin_schedule_shipment') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="order_id" class="form-label">Заказ</label>
+                            <select class="form-control" id="order_id" name="order_id" required>
+                                <option value="">Выберите заказ...</option>
+                                {% for order in available_orders %}
+                                <option value="{{ order.id }}">
+                                    {{ order.tracking_number }} - {{ order.customer_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="driver_id" class="form-label">Водитель</label>
+                            <select class="form-control" id="driver_id" name="driver_id" required>
+                                <option value="">Выберите водителя...</option>
+                                {% for driver in drivers %}
+                                <option value="{{ driver.id }}">
+                                    {{ driver.full_name }} ({{ driver.vehicle_number }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="pickup_date" class="form-label">Дата забора</label>
+                            <input type="date" class="form-control" id="pickup_date" name="pickup_date" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="delivery_date" class="form-label">Дата доставки</label>
+                            <input type="date" class="form-control" id="delivery_date" name="delivery_date" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Примечания</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-success">Запланировать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Event Details Modal -->
+<div class="modal fade" id="eventModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Детали отгрузки</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="eventDetails">
+                <!-- Event details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn btn-success" id="markCompletedBtn" style="display: none;">
+                    Отметить выполненным
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<style>
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.fc-event {
+    border-radius: 6px !important;
+    border: none !important;
+    font-weight: 500 !important;
+    font-size: 12px !important;
+}
+
+.fc-event-pickup {
+    background-color: #3b82f6 !important;
+}
+
+.fc-event-delivery {
+    background-color: #10b981 !important;
+}
+
+.fc-event-overdue {
+    background-color: #f59e0b !important;
+}
+
+.fc-event-cancelled {
+    background-color: #ef4444 !important;
+}
+
+.fc-toolbar-title {
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+    color: var(--gray-900) !important;
+}
+
+.fc-button {
+    background: var(--primary) !important;
+    border-color: var(--primary) !important;
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+}
+
+.fc-button:hover {
+    background: var(--primary-dark) !important;
+    border-color: var(--primary-dark) !important;
+}
+
+.fc-button:disabled {
+    background: var(--gray-300) !important;
+    border-color: var(--gray-300) !important;
+}
+
+.fc-today-button {
+    background: var(--gray-100) !important;
+    border-color: var(--gray-300) !important;
+    color: var(--gray-700) !important;
+}
+
+.fc-daygrid-day-number {
+    color: var(--gray-600) !important;
+    font-weight: 500 !important;
+}
+
+.fc-col-header-cell {
+    background: var(--gray-50) !important;
+    border-color: var(--gray-200) !important;
+}
+
+.fc-scrollgrid {
+    border-color: var(--gray-200) !important;
+}
+
+.fc-daygrid-day {
+    border-color: var(--gray-200) !important;
+}
+
+.fc-day-today {
+    background: rgba(37, 99, 235, 0.05) !important;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendar');
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'ru',
+        height: 'auto',
+        headerToolbar: false,
+        dayMaxEvents: 3,
+        moreLinkText: function(num) {
+            return 'ещё ' + num;
+        },
+        events: '/admin/calendar/events',
+        eventClick: function(info) {
+            showEventDetails(info.event);
+        },
+        dateClick: function(info) {
+            // Set the selected date in the schedule modal
+            document.getElementById('pickup_date').value = info.dateStr;
+            document.getElementById('delivery_date').value = info.dateStr;
+            
+            // Show schedule modal
+            const modal = new bootstrap.Modal(document.getElementById('scheduleModal'));
+            modal.show();
+        },
+        eventDidMount: function(info) {
+            // Add custom classes based on event type
+            const event = info.event;
+            const eventType = event.extendedProps.type;
+            info.el.classList.add('fc-event-' + eventType);
+        }
+    });
+
+    calendar.render();
+
+    // Calendar controls
+    document.getElementById('prevBtn').addEventListener('click', function() {
+        calendar.prev();
+    });
+
+    document.getElementById('nextBtn').addEventListener('click', function() {
+        calendar.next();
+    });
+
+    document.getElementById('todayBtn').addEventListener('click', function() {
+        calendar.today();
+    });
+
+    document.getElementById('monthView').addEventListener('click', function() {
+        calendar.changeView('dayGridMonth');
+        updateViewButtons('month');
+    });
+
+    document.getElementById('weekView').addEventListener('click', function() {
+        calendar.changeView('timeGridWeek');
+        updateViewButtons('week');
+    });
+
+    document.getElementById('dayView').addEventListener('click', function() {
+        calendar.changeView('timeGridDay');
+        updateViewButtons('day');
+    });
+
+    function updateViewButtons(activeView) {
+        document.querySelectorAll('#monthView, #weekView, #dayView').forEach(btn => {
+            btn.className = 'btn btn-outline';
+        });
+        
+        if (activeView === 'month') {
+            document.getElementById('monthView').className = 'btn btn-primary';
+        } else if (activeView === 'week') {
+            document.getElementById('weekView').className = 'btn btn-primary';
+        } else if (activeView === 'day') {
+            document.getElementById('dayView').className = 'btn btn-primary';
+        }
+    }
+
+    function showEventDetails(event) {
+        const orderId = event.extendedProps.order_id;
+        
+        fetch(`/admin/calendar/event/${orderId}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('eventDetails').innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Информация о заказе</h6>
+                            <dl>
+                                <dt>Номер заказа:</dt>
+                                <dd>${data.tracking_number}</dd>
+                                <dt>Клиент:</dt>
+                                <dd>${data.customer_name}</dd>
+                                <dt>Телефон:</dt>
+                                <dd>${data.customer_phone}</dd>
+                                <dt>Тип:</dt>
+                                <dd>${data.order_type === 'astana' ? 'Астана' : 'Казахстан'}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Планирование</h6>
+                            <dl>
+                                <dt>Водитель:</dt>
+                                <dd>${data.driver_name || 'Не назначен'}</dd>
+                                <dt>Плановая дата забора:</dt>
+                                <dd>${data.scheduled_pickup_date || 'Не запланирована'}</dd>
+                                <dt>Плановая дата доставки:</dt>
+                                <dd>${data.scheduled_delivery_date || 'Не запланирована'}</dd>
+                                <dt>Статус:</dt>
+                                <dd><span class="status-badge status-${data.status}">${data.status_display}</span></dd>
+                            </dl>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>Адреса</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Забор:</strong><br>
+                                    ${data.pickup_address}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Доставка:</strong><br>
+                                    ${data.delivery_address}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Show complete button for in-progress orders
+                const completeBtn = document.getElementById('markCompletedBtn');
+                if (data.status === 'in_progress') {
+                    completeBtn.style.display = 'block';
+                    completeBtn.onclick = function() {
+                        markOrderCompleted(orderId);
+                    };
+                } else {
+                    completeBtn.style.display = 'none';
+                }
+                
+                const modal = new bootstrap.Modal(document.getElementById('eventModal'));
+                modal.show();
+            })
+            .catch(error => {
+                console.error('Error fetching event details:', error);
+            });
+    }
+
+    function markOrderCompleted(orderId) {
+        if (confirm('Отметить заказ как выполненный?')) {
+            fetch(`/admin/orders/${orderId}/complete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrf_token]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    calendar.refetchEvents();
+                    bootstrap.Modal.getInstance(document.getElementById('eventModal')).hide();
+                    showNotification('Заказ отмечен как выполненный', 'success');
+                } else {
+                    showNotification('Ошибка при обновлении статуса', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error completing order:', error);
+                showNotification('Ошибка при обновлении статуса', 'danger');
+            });
+        }
+    }
+
+    // Schedule form submission
+    document.getElementById('scheduleForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        fetch(this.action, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                calendar.refetchEvents();
+                bootstrap.Modal.getInstance(document.getElementById('scheduleModal')).hide();
+                this.reset();
+                showNotification('Отгрузка запланирована успешно', 'success');
+            } else {
+                showNotification(data.message || 'Ошибка при планировании отгрузки', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error scheduling shipment:', error);
+            showNotification('Ошибка при планировании отгрузки', 'danger');
+        });
+    });
+
+    // Set minimum date to today for date inputs
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('pickup_date').min = today;
+    document.getElementById('delivery_date').min = today;
+
+    // Auto-set delivery date when pickup date changes
+    document.getElementById('pickup_date').addEventListener('change', function() {
+        const pickupDate = new Date(this.value);
+        const deliveryDate = new Date(pickupDate);
+        deliveryDate.setDate(deliveryDate.getDate() + 1);
+        
+        document.getElementById('delivery_date').min = this.value;
+        if (!document.getElementById('delivery_date').value) {
+            document.getElementById('delivery_date').value = deliveryDate.toISOString().split('T')[0];
+        }
+    });
+});
+</script>
+{% endblock %}

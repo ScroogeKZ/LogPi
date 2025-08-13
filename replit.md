@@ -3,6 +3,25 @@
 ## Overview
 XPOM-KZ is a comprehensive logistics management web application built for the logistics department of "Хром-КЗ" company. The system automates order intake and management for deliveries within Astana and across Kazakhstan. It features a modern, minimalist public interface for customers to create and track orders, alongside a powerful administrative dashboard for logistics staff to manage operations, drivers, and analytics.
 
+## Recent Changes
+**Calendar Feature Added (August 13, 2025):**
+- Created modern minimalist admin panel with sidebar navigation
+- Added interactive shipment calendar using FullCalendar.js
+- Implemented calendar event management with color-coded status indicators
+- Added shipment scheduling functionality with date selection
+- Created order-to-driver assignment system within calendar
+- Added database columns for pickup/delivery scheduling
+- Sample data created for calendar demonstration
+
+**Migration Completed (August 13, 2025):**
+- Successfully migrated project from Replit Agent to Replit environment
+- All required Python packages installed and configured
+- PostgreSQL database provisioned and connected
+- Application running on Gunicorn server (port 5000)
+- Missing error templates (404.html, 500.html) created
+- Default admin account created: admin@xpom-kz.com / admin123
+- Full functionality restored and verified
+
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 

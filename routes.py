@@ -244,13 +244,9 @@ def admin_order_detail(order_id):
         return redirect(url_for('index'))
     
     order = Order.query.get_or_404(order_id)
-    form = AdminOrderForm(obj=order)
+    drivers = Driver.query.filter_by(is_active=True).all()
     
-    # Set driver_id to 0 if None for form display
-    if not order.driver_id:
-        form.driver_id.data = 0
-    
-    return render_template('admin/order_detail.html', order=order, form=form)
+    return render_template('admin/order_detail.html', order=order, drivers=drivers)
 
 @app.route('/admin/order/<int:order_id>/update', methods=['POST'])
 @login_required
@@ -259,40 +255,51 @@ def admin_update_order(order_id):
         flash('У вас нет прав доступа к административной панели', 'error')
         return redirect(url_for('index'))
     
-    order = Order.query.get_or_404(order_id)
-    form = AdminOrderForm()
-    
-    if form.validate_on_submit():
-        # Track status change
-        old_status = order.status
-        new_status = form.status.data
+    try:
+        order = Order.query.get_or_404(order_id)
         
-        # Update order
-        order.status = new_status
-        order.price = form.price.data
-        order.internal_comments = form.internal_comments.data
-        order.pickup_date = form.pickup_date.data
-        order.delivery_date = form.delivery_date.data
-        order.updated_at = datetime.utcnow()
+        # Update order fields
+        order.status = request.form.get('status')
+        order.price = float(request.form.get('price')) if request.form.get('price') else None
+        order.internal_comments = request.form.get('internal_comments')
         
         # Handle driver assignment
-        if form.driver_id.data and form.driver_id.data != 0:
-            order.driver_id = form.driver_id.data
+        driver_id = request.form.get('driver_id')
+        if driver_id and driver_id != '0':
+            order.driver_id = int(driver_id)
         else:
             order.driver_id = None
-        
-        # Add status history if status changed
-        if old_status != new_status:
-            history = OrderStatusHistory(
-                order_id=order.id,
-                status=new_status,
-                comment=f"Статус изменен с '{order.get_status_display()}' на '{form.status.data}'",
-                changed_by_id=current_user.id
-            )
-            db.session.add(history)
+            
+        order.updated_at = datetime.utcnow()
         
         db.session.commit()
         flash('Заказ успешно обновлен', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash('Ошибка при обновлении заказа', 'error')
+        
+    return redirect(url_for('admin_order_detail', order_id=order_id))
+
+@app.route('/admin/order/<int:order_id>/complete', methods=['POST'])
+@login_required
+def admin_complete_order(order_id):
+    if not current_user.is_logist():
+        flash('У вас нет прав доступа к административной панели', 'error')
+        return redirect(url_for('index'))
+    
+    try:
+        order = Order.query.get_or_404(order_id)
+        order.status = 'delivered'
+        order.delivery_date = datetime.utcnow()
+        order.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        flash('Заказ отмечен как выполненный', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash('Ошибка при обновлении заказа', 'error')
         
     return redirect(url_for('admin_order_detail', order_id=order_id))
 
@@ -400,26 +407,155 @@ def admin_analytics():
                          monthly_data=monthly_data, 
                          status_data=status_data)
 
-@app.route('/api/orders_chart_data')
+@app.route('/admin/calendar')
 @login_required
-def orders_chart_data():
+def admin_calendar():
+    if not current_user.is_logist():
+        flash('У вас нет прав доступа к административной панели', 'error')
+        return redirect(url_for('index'))
+    
+    # Get orders without scheduled dates for planning
+    available_orders = Order.query.filter(
+        Order.status.in_(['new', 'confirmed']),
+        Order.scheduled_pickup_date.is_(None)
+    ).all()
+    
+    # Get active drivers
+    drivers = Driver.query.filter(Driver.is_active == True).all()
+    
+    return render_template('admin/calendar.html', 
+                         available_orders=available_orders, 
+                         drivers=drivers)
+
+@app.route('/admin/calendar/events')
+@login_required  
+def admin_calendar_events():
     if not current_user.is_logist():
         return jsonify({'error': 'Access denied'}), 403
     
-    # Get last 7 days data
-    data = []
-    for i in range(6, -1, -1):
-        date = datetime.now().date() - timedelta(days=i)
-        order_count = Order.query.filter(
-            func.date(Order.created_at) == date
-        ).count()
-        
-        data.append({
-            'date': date.strftime('%d.%m'),
-            'orders': order_count
-        })
+    # Get orders with scheduled dates
+    orders = Order.query.filter(
+        db.or_(
+            Order.scheduled_pickup_date.isnot(None),
+            Order.scheduled_delivery_date.isnot(None)
+        )
+    ).all()
     
-    return jsonify(data)
+    events = []
+    
+    for order in orders:
+        # Pickup event
+        if order.scheduled_pickup_date:
+            event_type = 'pickup'
+            if order.status == 'cancelled':
+                event_type = 'cancelled'
+            elif order.scheduled_pickup_date < datetime.now().date() and order.status != 'delivered':
+                event_type = 'overdue'
+                
+            events.append({
+                'id': f'pickup_{order.id}',
+                'title': f'Забор: {order.tracking_number}',
+                'start': order.scheduled_pickup_date.isoformat(),
+                'backgroundColor': '#3b82f6' if event_type == 'pickup' else ('#f59e0b' if event_type == 'overdue' else '#ef4444'),
+                'borderColor': '#3b82f6' if event_type == 'pickup' else ('#f59e0b' if event_type == 'overdue' else '#ef4444'),
+                'extendedProps': {
+                    'order_id': order.id,
+                    'type': event_type,
+                    'event_type': 'pickup'
+                }
+            })
+        
+        # Delivery event  
+        if order.scheduled_delivery_date:
+            event_type = 'delivery'
+            if order.status == 'cancelled':
+                event_type = 'cancelled'
+            elif order.scheduled_delivery_date < datetime.now().date() and order.status != 'delivered':
+                event_type = 'overdue'
+                
+            events.append({
+                'id': f'delivery_{order.id}',
+                'title': f'Доставка: {order.tracking_number}',
+                'start': order.scheduled_delivery_date.isoformat(),
+                'backgroundColor': '#10b981' if event_type == 'delivery' else ('#f59e0b' if event_type == 'overdue' else '#ef4444'),
+                'borderColor': '#10b981' if event_type == 'delivery' else ('#f59e0b' if event_type == 'overdue' else '#ef4444'),
+                'extendedProps': {
+                    'order_id': order.id,
+                    'type': event_type,
+                    'event_type': 'delivery'
+                }
+            })
+    
+    return jsonify(events)
+
+@app.route('/admin/calendar/event/<int:order_id>')
+@login_required
+def admin_calendar_event_details(order_id):
+    if not current_user.is_logist():
+        return jsonify({'error': 'Access denied'}), 403
+    
+    order = Order.query.get_or_404(order_id)
+    
+    return jsonify({
+        'tracking_number': order.tracking_number,
+        'customer_name': order.customer_name,
+        'customer_phone': order.customer_phone,
+        'order_type': order.order_type,
+        'driver_name': order.assigned_driver.full_name if order.assigned_driver else None,
+        'scheduled_pickup_date': order.scheduled_pickup_date.strftime('%d.%m.%Y') if order.scheduled_pickup_date else None,
+        'scheduled_delivery_date': order.scheduled_delivery_date.strftime('%d.%m.%Y') if order.scheduled_delivery_date else None,
+        'pickup_address': order.pickup_address,
+        'delivery_address': order.delivery_address,
+        'status': order.status,
+        'status_display': order.get_status_display()
+    })
+
+@app.route('/admin/schedule_shipment', methods=['POST'])
+@login_required
+def admin_schedule_shipment():
+    if not current_user.is_logist():
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        order_id = request.form.get('order_id')
+        driver_id = request.form.get('driver_id')
+        pickup_date = datetime.strptime(request.form.get('pickup_date'), '%Y-%m-%d').date()
+        delivery_date = datetime.strptime(request.form.get('delivery_date'), '%Y-%m-%d').date()
+        
+        order = Order.query.get_or_404(order_id)
+        
+        # Update order with scheduled dates
+        order.scheduled_pickup_date = pickup_date
+        order.scheduled_delivery_date = delivery_date
+        order.driver_id = driver_id
+        order.status = 'confirmed'
+        
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Отгрузка запланирована успешно'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Ошибка при планировании отгрузки'})
+
+@app.route('/admin/orders/<int:order_id>/complete', methods=['POST'])
+@login_required
+def admin_complete_order_old(order_id):
+    if not current_user.is_logist():
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        order = Order.query.get_or_404(order_id)
+        order.status = 'delivered'
+        order.actual_delivery_date = datetime.now().date()
+        
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Заказ отмечен как выполненный'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Ошибка при обновлении статуса'})
 
 @app.errorhandler(404)
 def not_found_error(error):

@@ -12,100 +12,156 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Custom CSS -->
-    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
     
     {% block extra_head %}{% endblock %}
 </head>
-<body class="admin-body">
-    <!-- Admin Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('admin_dashboard') }}">
-                <i class="fas fa-cog me-2"></i>
-                <span>XPOM-KZ Admin</span>
-            </a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbar">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <div class="collapse navbar-collapse" id="adminNavbar">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'admin_dashboard' }}" 
-                           href="{{ url_for('admin_dashboard') }}">
-                            <i class="fas fa-tachometer-alt"></i> Панель управления
+<body class="admin-layout">
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-brand">
+                <div class="brand-icon">
+                    <i class="fas fa-truck"></i>
+                </div>
+                <div class="brand-text">
+                    <div class="brand-title">XPOM-KZ</div>
+                    <div class="brand-subtitle">Панель управления</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-menu">
+            <div class="menu-section">
+                <div class="menu-title">Основное</div>
+                <ul class="menu-list">
+                    <li class="menu-item">
+                        <a href="{{ url_for('admin_dashboard') }}" class="menu-link {{ 'active' if request.endpoint == 'admin_dashboard' }}">
+                            <i class="fas fa-home"></i>
+                            <span>Главная</span>
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'admin_orders' }}" 
-                           href="{{ url_for('admin_orders') }}">
-                            <i class="fas fa-list"></i> Все заказы
+                    <li class="menu-item">
+                        <a href="{{ url_for('admin_orders') }}" class="menu-link {{ 'active' if request.endpoint == 'admin_orders' }}">
+                            <i class="fas fa-box"></i>
+                            <span>Заказы</span>
+                            {% if stats and stats.get('new_orders', 0) > 0 %}
+                                <span class="badge">{{ stats.get('new_orders', 0) }}</span>
+                            {% endif %}
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'admin_reports' }}" 
-                           href="{{ url_for('admin_reports') }}">
-                            <i class="fas fa-chart-line"></i> Отчеты
+                    <li class="menu-item">
+                        <a href="{{ url_for('admin_calendar') }}" class="menu-link {{ 'active' if request.endpoint == 'admin_calendar' }}">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>Календарь отгрузок</span>
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'admin_analytics' }}" 
-                           href="{{ url_for('admin_analytics') }}">
-                            <i class="fas fa-chart-pie"></i> Аналитика
+                    <li class="menu-item">
+                        <a href="{{ url_for('admin_calendar') }}" class="menu-link {{ 'active' if request.endpoint == 'admin_calendar' }}">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>Календарь отгрузок</span>
                         </a>
                     </li>
                 </ul>
-                
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('index') }}" target="_blank">
-                            <i class="fas fa-external-link-alt"></i> Публичный сайт
+            </div>
+
+            <div class="menu-section">
+                <div class="menu-title">Аналитика</div>
+                <ul class="menu-list">
+                    <li class="menu-item">
+                        <a href="{{ url_for('admin_reports') }}" class="menu-link {{ 'active' if request.endpoint == 'admin_reports' }}">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Отчеты</span>
                         </a>
                     </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user"></i> {{ current_user.full_name.split()[0] }}
+                    <li class="menu-item">
+                        <a href="{{ url_for('admin_analytics') }}" class="menu-link {{ 'active' if request.endpoint == 'admin_analytics' }}">
+                            <i class="fas fa-chart-pie"></i>
+                            <span>Статистика</span>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="{{ url_for('profile') }}">
-                                <i class="fas fa-user-circle"></i> Личный кабинет
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">
-                                <i class="fas fa-sign-out-alt"></i> Выйти
-                            </a></li>
-                        </ul>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="menu-section">
+                <div class="menu-title">Система</div>
+                <ul class="menu-list">
+                    <li class="menu-item">
+                        <a href="{{ url_for('profile') }}" class="menu-link">
+                            <i class="fas fa-user"></i>
+                            <span>Профиль</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="{{ url_for('index') }}" class="menu-link" target="_blank">
+                            <i class="fas fa-external-link-alt"></i>
+                            <span>Публичный сайт</span>
+                        </a>
                     </li>
                 </ul>
             </div>
         </div>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <div class="user-details">
+                    <div class="user-name">{{ current_user.full_name.split()[0] }}</div>
+                    <div class="user-role">{{ 'Логист' if current_user.role == 'logist' else 'Сотрудник' }}</div>
+                </div>
+            </div>
+            <button class="logout-btn" onclick="window.location.href='{{ url_for('logout') }}'">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
     </nav>
 
-    <!-- Flash Messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="container-fluid mt-3">
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' if category == 'success' else 'info' }} alert-dismissible fade show" role="alert">
-                        <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' if category == 'success' else 'info-circle' }}"></i>
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
-
     <!-- Main Content -->
-    <main class="admin-main">
-        {% block content %}{% endblock %}
-    </main>
+    <div class="main-content">
+        <!-- Top Bar -->
+        <header class="topbar">
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <div class="topbar-content">
+                <div class="page-title">
+                    {% block page_title %}Панель управления{% endblock %}
+                </div>
+                
+                <div class="topbar-actions">
+                    <div class="current-time" id="currentTime"></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else 'success' if category == 'success' else 'info' }} alert-dismissible">
+                            <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' if category == 'success' else 'info-circle' }}"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Page Content -->
+        <main class="page-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
     
     {% block extra_scripts %}{% endblock %}
 </body>

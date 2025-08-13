@@ -74,6 +74,11 @@ class Order(db.Model):
     price = db.Column(db.Float)
     driver_id = db.Column(db.Integer, db.ForeignKey('driver.id'), nullable=True)
     
+    # Shipment scheduling
+    scheduled_pickup_date = db.Column(db.Date)
+    scheduled_delivery_date = db.Column(db.Date)
+    estimated_delivery_time = db.Column(db.String(20))  # morning, afternoon, evening
+    
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -116,6 +121,8 @@ class Order(db.Model):
             'kazakhstan': 'Межгородская перевозка'
         }
         return type_map.get(self.order_type, self.order_type)
+    
+
     
     def __repr__(self):
         return f'<Order {self.tracking_number}>'

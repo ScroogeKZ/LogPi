@@ -70,5 +70,7 @@ with app.app_context():
         db.session.commit()
         logging.info("Default admin user created: admin@xpom-kz.com / admin123")
 
-# Import routes
+# Import routes and register template filters
 import routes
+from utils import register_template_filters
+register_template_filters(app)
