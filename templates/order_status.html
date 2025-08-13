@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}{% if success_page %}Заявка создана{% else %}Статус заказа{% endif %} - XPOM-KZ{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            {% if success_page %}
+            <!-- Success Message -->
+            <div class="text-center mb-4">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle text-success"></i>
+                </div>
+                <h2 class="text-success">Заявка успешно создана!</h2>
+                <p class="lead">Ваш номер отслеживания: <strong>{{ order.tracking_number }}</strong></p>
+                <p class="text-muted">Мы отправили уведомление нашим логистам. С вами свяжутся в ближайшее время.</p>
+            </div>
+            {% endif %}
+            
+            <!-- Order Status Card -->
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h4 class="mb-0">
+                                <i class="fas fa-package"></i> 
+                                Заказ {{ order.tracking_number }}
+                            </h4>
+                        </div>
+                        <div class="col-auto">
+                            <span class="badge bg-light text-dark fs-6">
+                                {{ order.get_status_display() }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Status Timeline -->
+                    <div class="status-timeline mb-4">
+                        <h5 class="mb-3">
+                            <i class="fas fa-route"></i> Статус доставки
+                        </h5>
+                        
+                        <div class="timeline">
+                            <div class="timeline-item {{ 'completed' if order.status != 'new' else 'active' if order.status == 'new' else '' }}">
+                                <div class="timeline-marker">
+                                    <i class="fas fa-{{ 'check' if order.status != 'new' else 'clock' }}"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <h6>Заявка создана</h6>
+                                    <small>{{ order.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                                </div>
+                            </div>
+                            
+                            <div class="timeline-item {{ 'completed' if order.status in ['in_progress', 'delivered'] else 'active' if order.status == 'confirmed' else '' }}">
+                                <div class="timeline-marker">
+                                    <i class="fas fa-{{ 'check' if order.status in ['in_progress', 'delivered'] else 'clock' if order.status == 'confirmed' else 'circle' }}"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <h6>Заявка подтверждена</h6>
+                                    {% if order.status not in ['new'] %}
+                                    <small>Статус обновлен</small>
+                                    {% else %}
+                                    <small class="text-muted">Ожидается подтверждение</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="timeline-item {{ 'completed' if order.status == 'delivered' else 'active' if order.status == 'in_progress' else '' }}">
+                                <div class="timeline-marker">
+                                    <i class="fas fa-{{ 'check' if order.status == 'delivered' else 'truck' if order.status == 'in_progress' else 'circle' }}"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <h6>В процессе доставки</h6>
+                                    {% if order.status == 'in_progress' %}
+                                    <small class="text-success">Груз в пути</small>
+                                    {% elif order.status == 'delivered' %}
+                                    <small>Завершено</small>
+                                    {% else %}
+                                    <small class="text-muted">Ожидается</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="timeline-item {{ 'completed' if order.status == 'delivered' else '' }}">
+                                <div class="timeline-marker">
+                                    <i class="fas fa-{{ 'check-circle' if order.status == 'delivered' else 'circle' }}"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <h6>Доставлено</h6>
+                                    {% if order.status == 'delivered' %}
+                                    <small class="text-success">{{ order.delivery_date.strftime('%d.%m.%Y %H:%M') if order.delivery_date else 'Завершено' }}</small>
+                                    {% else %}
+                                    <small class="text-muted">Ожидается</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Order Details -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h6 class="section-title">
+                                    <i class="fas fa-user text-primary"></i> Информация о заказчике
+                                </h6>
+                                <dl class="info-list">
+                                    <dt>Имя:</dt>
+                                    <dd>{{ order.customer_name }}</dd>
+                                    <dt>Телефон:</dt>
+                                    <dd>{{ order.customer_phone | format_phone }}</dd>
+                                    {% if order.customer_email %}
+                                    <dt>Email:</dt>
+                                    <dd>{{ order.customer_email }}</dd>
+                                    {% endif %}
+                                </dl>
+                            </div>
+                            
+                            <div class="info-section">
+                                <h6 class="section-title">
+                                    <i class="fas fa-box text-success"></i> Информация о грузе
+                                </h6>
+                                <dl class="info-list">
+                                    <dt>Описание:</dt>
+                                    <dd>{{ order.cargo_description }}</dd>
+                                    {% if order.cargo_weight %}
+                                    <dt>Вес:</dt>
+                                    <dd>{{ order.cargo_weight }} кг</dd>
+                                    {% endif %}
+                                    {% if order.cargo_volume %}
+                                    <dt>Объем:</dt>
+                                    <dd>{{ order.cargo_volume }} м³</dd>
+                                    {% endif %}
+                                    {% if order.cargo_dimensions %}
+                                    <dt>Габариты:</dt>
+                                    <dd>{{ order.cargo_dimensions }}</dd>
+                                    {% endif %}
+                                </dl>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h6 class="section-title">
+                                    <i class="fas fa-route text-warning"></i> Маршрут доставки
+                                </h6>
+                                <div class="route-info">
+                                    <div class="route-point pickup">
+                                        <div class="route-icon">
+                                            <i class="fas fa-map-marker-alt text-success"></i>
+                                        </div>
+                                        <div class="route-details">
+                                            <strong>Забор груза</strong>
+                                            <p class="mb-1">{{ order.pickup_address }}</p>
+                                            {% if order.pickup_contact %}
+                                            <small class="text-muted">
+                                                Контакт: {{ order.pickup_contact }}
+                                                {% if order.pickup_phone %} | {{ order.pickup_phone | format_phone }}{% endif %}
+                                            </small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="route-arrow">
+                                        <i class="fas fa-arrow-down text-muted"></i>
+                                    </div>
+                                    
+                                    <div class="route-point delivery">
+                                        <div class="route-icon">
+                                            <i class="fas fa-map-marker-alt text-danger"></i>
+                                        </div>
+                                        <div class="route-details">
+                                            <strong>Доставка</strong>
+                                            <p class="mb-1">{{ order.delivery_address }}</p>
+                                            {% if order.delivery_contact %}
+                                            <small class="text-muted">
+                                                Контакт: {{ order.delivery_contact }}
+                                                {% if order.delivery_phone %} | {{ order.delivery_phone | format_phone }}{% endif %}
+                                            </small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if order.assigned_driver %}
+                            <div class="info-section">
+                                <h6 class="section-title">
+                                    <i class="fas fa-user-tie text-info"></i> Назначенный водитель
+                                </h6>
+                                <dl class="info-list">
+                                    <dt>Имя:</dt>
+                                    <dd>{{ order.assigned_driver.full_name }}</dd>
+                                    <dt>Телефон:</dt>
+                                    <dd>{{ order.assigned_driver.phone | format_phone }}</dd>
+                                    {% if order.assigned_driver.vehicle_number %}
+                                    <dt>Автомобиль:</dt>
+                                    <dd>{{ order.assigned_driver.vehicle_number }}</dd>
+                                    {% endif %}
+                                </dl>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Additional Info -->
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="info-card">
+                                <h6><i class="fas fa-info-circle"></i> Детали заказа</h6>
+                                <ul class="list-unstyled">
+                                    <li><strong>Тип:</strong> {{ order.get_type_display() }}</li>
+                                    <li><strong>Создан:</strong> {{ order.created_at.strftime('%d.%m.%Y %H:%M') }}</li>
+                                    <li><strong>Обновлен:</strong> {{ order.updated_at.strftime('%d.%m.%Y %H:%M') }}</li>
+                                    {% if order.price %}
+                                    <li><strong>Стоимость:</strong> {{ "%.2f"|format(order.price) }} ₸</li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="info-card">
+                                <h6><i class="fas fa-calendar-alt"></i> Планируемые даты</h6>
+                                <ul class="list-unstyled">
+                                    {% if order.pickup_date %}
+                                    <li><strong>Забор:</strong> {{ order.pickup_date.strftime('%d.%m.%Y %H:%M') }}</li>
+                                    {% else %}
+                                    <li><strong>Забор:</strong> <span class="text-muted">Не указано</span></li>
+                                    {% endif %}
+                                    
+                                    {% if order.delivery_date %}
+                                    <li><strong>Доставка:</strong> {{ order.delivery_date.strftime('%d.%m.%Y %H:%M') }}</li>
+                                    {% else %}
+                                    <li><strong>Доставка:</strong> <span class="text-muted">Не указано</span></li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="text-center mt-4">
+                <a href="{{ url_for('track_order') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-search"></i> Отследить другой заказ
+                </a>
+                <a href="{{ url_for('index') }}" class="btn btn-primary ms-2">
+                    <i class="fas fa-home"></i> На главную
+                </a>
+                
+                {% if not current_user.is_authenticated %}
+                <a href="{{ url_for('register') }}" class="btn btn-success ms-2">
+                    <i class="fas fa-user-plus"></i> Создать аккаунт
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

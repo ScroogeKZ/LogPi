@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Регистрация - XPOM-KZ{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="auth-card">
+                <div class="text-center mb-4">
+                    <div class="auth-icon">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <h2>Регистрация</h2>
+                    <p class="text-muted">Создайте аккаунт для доступа к личному кабинету</p>
+                </div>
+                
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.full_name.label(class="form-label required") }}
+                        {{ form.full_name(class="form-control" + (" is-invalid" if form.full_name.errors else "")) }}
+                        {% if form.full_name.errors %}
+                            <div class="invalid-feedback">{{ form.full_name.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.email.label(class="form-label required") }}
+                        {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else "")) }}
+                        {% if form.email.errors %}
+                            <div class="invalid-feedback">{{ form.email.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.phone.label(class="form-label required") }}
+                        {{ form.phone(class="form-control", placeholder="+7 (___) ___-__-__") }}
+                        {% if form.phone.errors %}
+                            <div class="invalid-feedback d-block">{{ form.phone.errors[0] }}</div>
+                        {% endif %}
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i>
+                            После регистрации мы автоматически привяжем к вашему аккаунту все заказы, сделанные с этого номера телефона
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.password.label(class="form-label required") }}
+                        {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else "")) }}
+                        {% if form.password.errors %}
+                            <div class="invalid-feedback">{{ form.password.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        {{ form.confirm_password.label(class="form-label required") }}
+                        {{ form.confirm_password(class="form-control" + (" is-invalid" if form.confirm_password.errors else "")) }}
+                        {% if form.confirm_password.errors %}
+                            <div class="invalid-feedback">{{ form.confirm_password.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100 btn-lg mb-3">
+                        <i class="fas fa-user-plus"></i> Зарегистрироваться
+                    </button>
+                </form>
+                
+                <div class="text-center">
+                    <p class="text-muted">
+                        Уже есть аккаунт? 
+                        <a href="{{ url_for('login') }}" class="text-primary">Войти в систему</a>
+                    </p>
+                </div>
+                
+                <!-- Benefits -->
+                <div class="benefits-section mt-4 p-3 bg-light rounded">
+                    <h6 class="mb-3">
+                        <i class="fas fa-star text-warning"></i>
+                        Преимущества личного кабинета:
+                    </h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success"></i>
+                            История всех ваших заказов
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success"></i>
+                            Быстрое создание заявок с сохраненными данными
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success"></i>
+                            Уведомления об изменении статуса
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success"></i>
+                            Статистика по доставкам
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Phone number formatting
+    const phoneInput = document.querySelector('input[name="phone"]');
+    phoneInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.startsWith('7')) {
+            value = value.substring(1);
+        }
+        if (value.length > 0) {
+            if (value.length <= 3) {
+                value = `+7 (${value}`;
+            } else if (value.length <= 6) {
+                value = `+7 (${value.slice(0,3)}) ${value.slice(3)}`;
+            } else if (value.length <= 8) {
+                value = `+7 (${value.slice(0,3)}) ${value.slice(3,6)}-${value.slice(6)}`;
+            } else {
+                value = `+7 (${value.slice(0,3)}) ${value.slice(3,6)}-${value.slice(6,8)}-${value.slice(8,10)}`;
+            }
+        }
+        e.target.value = value;
+    });
+    
+    // Password confirmation validation
+    const passwordInput = document.querySelector('input[name="password"]');
+    const confirmInput = document.querySelector('input[name="confirm_password"]');
+    
+    confirmInput.addEventListener('input', function() {
+        if (passwordInput.value !== confirmInput.value) {
+            confirmInput.setCustomValidity('Пароли не совпадают');
+            confirmInput.classList.add('is-invalid');
+        } else {
+            confirmInput.setCustomValidity('');
+            confirmInput.classList.remove('is-invalid');
+        }
+    });
+});
+</script>
+{% endblock %}

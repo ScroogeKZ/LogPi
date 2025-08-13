@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}{{ order_title }} - XPOM-KZ{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-{{ 'success' if order_type == 'astana' else 'primary' }} text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-{{ 'map-marker-alt' if order_type == 'astana' else 'plane' }}"></i>
+                        {{ order_title }}
+                    </h3>
+                    <p class="mb-0">Заполните форму для создания заявки на доставку</p>
+                </div>
+                
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('submit_order') }}">
+                        {{ form.hidden_tag() }}
+                        {{ form.order_type() }}
+                        
+                        <!-- Customer Information -->
+                        <div class="form-section">
+                            <h5 class="section-title">
+                                <i class="fas fa-user"></i> Контактная информация
+                            </h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.customer_name.label(class="form-label required") }}
+                                        {{ form.customer_name(class="form-control" + (" is-invalid" if form.customer_name.errors else "")) }}
+                                        {% if form.customer_name.errors %}
+                                            <div class="invalid-feedback">{{ form.customer_name.errors[0] }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.customer_phone.label(class="form-label required") }}
+                                        {{ form.customer_phone(class="form-control", placeholder="+7 (___) ___-__-__") }}
+                                        {% if form.customer_phone.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.customer_phone.errors[0] }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ form.customer_email.label(class="form-label") }}
+                                {{ form.customer_email(class="form-control", placeholder="email@example.com") }}
+                                {% if form.customer_email.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.customer_email.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Pickup Information -->
+                        <div class="form-section">
+                            <h5 class="section-title">
+                                <i class="fas fa-map-marker-alt text-success"></i> Адрес забора груза
+                            </h5>
+                            
+                            <div class="mb-3">
+                                {{ form.pickup_address.label(class="form-label required") }}
+                                {{ form.pickup_address(class="form-control", rows="3") }}
+                                {% if form.pickup_address.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.pickup_address.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.pickup_contact.label(class="form-label") }}
+                                        {{ form.pickup_contact(class="form-control") }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.pickup_phone.label(class="form-label") }}
+                                        {{ form.pickup_phone(class="form-control", placeholder="+7 (___) ___-__-__") }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Delivery Information -->
+                        <div class="form-section">
+                            <h5 class="section-title">
+                                <i class="fas fa-map-marker-alt text-danger"></i> Адрес доставки груза
+                            </h5>
+                            
+                            <div class="mb-3">
+                                {{ form.delivery_address.label(class="form-label required") }}
+                                {{ form.delivery_address(class="form-control", rows="3") }}
+                                {% if form.delivery_address.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.delivery_address.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.delivery_contact.label(class="form-label") }}
+                                        {{ form.delivery_contact(class="form-control") }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.delivery_phone.label(class="form-label") }}
+                                        {{ form.delivery_phone(class="form-control", placeholder="+7 (___) ___-__-__") }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Cargo Information -->
+                        <div class="form-section">
+                            <h5 class="section-title">
+                                <i class="fas fa-box"></i> Информация о грузе
+                            </h5>
+                            
+                            <div class="mb-3">
+                                {{ form.cargo_description.label(class="form-label required") }}
+                                {{ form.cargo_description(class="form-control", rows="3", placeholder="Опишите характер груза, особенности упаковки и обращения") }}
+                                {% if form.cargo_description.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.cargo_description.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        {{ form.cargo_weight.label(class="form-label") }}
+                                        <div class="input-group">
+                                            {{ form.cargo_weight(class="form-control", placeholder="0.0") }}
+                                            <span class="input-group-text">кг</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        {{ form.cargo_volume.label(class="form-label") }}
+                                        <div class="input-group">
+                                            {{ form.cargo_volume(class="form-control", placeholder="0.0") }}
+                                            <span class="input-group-text">м³</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        {{ form.cargo_dimensions.label(class="form-label") }}
+                                        {{ form.cargo_dimensions(class="form-control", placeholder="Д×Ш×В см") }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-{{ 'success' if order_type == 'astana' else 'primary' }} btn-lg px-5">
+                                <i class="fas fa-paper-plane"></i> Отправить заявку
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Info Card -->
+            <div class="card mt-4 bg-light border-0">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <i class="fas fa-clock text-primary fa-2x mb-2"></i>
+                            <h6>Быстро</h6>
+                            <small class="text-muted">Обработка заявки в течение часа</small>
+                        </div>
+                        <div class="col-md-3">
+                            <i class="fas fa-shield-alt text-success fa-2x mb-2"></i>
+                            <h6>Безопасно</h6>
+                            <small class="text-muted">Полная страховка груза</small>
+                        </div>
+                        <div class="col-md-3">
+                            <i class="fas fa-map-marker-alt text-warning fa-2x mb-2"></i>
+                            <h6>Отслеживание</h6>
+                            <small class="text-muted">Контроль на каждом этапе</small>
+                        </div>
+                        <div class="col-md-3">
+                            <i class="fas fa-phone text-info fa-2x mb-2"></i>
+                            <h6>Поддержка</h6>
+                            <small class="text-muted">Консультации 24/7</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Phone number formatting
+    const phoneInputs = document.querySelectorAll('input[type="text"][name*="phone"]');
+    phoneInputs.forEach(input => {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.startsWith('7')) {
+                value = value.substring(1);
+            }
+            if (value.length > 0) {
+                if (value.length <= 3) {
+                    value = `+7 (${value}`;
+                } else if (value.length <= 6) {
+                    value = `+7 (${value.slice(0,3)}) ${value.slice(3)}`;
+                } else if (value.length <= 8) {
+                    value = `+7 (${value.slice(0,3)}) ${value.slice(3,6)}-${value.slice(6)}`;
+                } else {
+                    value = `+7 (${value.slice(0,3)}) ${value.slice(3,6)}-${value.slice(6,8)}-${value.slice(8,10)}`;
+                }
+            }
+            e.target.value = value;
+        });
+    });
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const requiredFields = form.querySelectorAll('[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert('Пожалуйста, заполните все обязательные поля');
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,324 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Отчеты - XPOM-KZ{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-chart-line text-primary"></i>
+            Отчеты и аналитика
+        </h1>
+        <div class="text-muted">
+            Период: {{ stats.period }}
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card bg-primary text-white shadow">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                Общее количество заказов
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold">{{ stats.total_orders }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-box fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card bg-success text-white shadow">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                Общая выручка
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold">{{ "%.2f"|format(stats.total_revenue) }} ₸</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-tenge-sign fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card bg-info text-white shadow">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                Средняя стоимость доставки
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold">{{ "%.2f"|format(stats.avg_cost) }} ₸</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-bar fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card bg-warning text-white shadow">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                Активных водителей
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold">{{ stats.driver_stats|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Cost Analysis by Type -->
+        <div class="col-xl-6 col-lg-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-pie-chart"></i> Распределение заказов по типам
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="orderTypeChart" width="100" height="50"></canvas>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="border-start border-success border-4 ps-3">
+                                    <h5 class="text-success">{{ stats.astana_orders }}</h5>
+                                    <small class="text-muted">Заказы по Астане</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="border-start border-primary border-4 ps-3">
+                                    <h5 class="text-primary">{{ stats.kz_orders }}</h5>
+                                    <small class="text-muted">Межгородские заказы</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Driver Performance -->
+        <div class="col-xl-6 col-lg-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-user-tie"></i> Статистика по водителям
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if stats.driver_stats %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Водитель</th>
+                                        <th>Заказов</th>
+                                        <th>Выручка</th>
+                                        <th>Средний чек</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for driver in stats.driver_stats %}
+                                    <tr>
+                                        <td><strong>{{ driver.full_name }}</strong></td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ driver.order_count }}</span>
+                                        </td>
+                                        <td>{{ "%.2f"|format(driver.total_cost or 0) }} ₸</td>
+                                        <td>{{ "%.2f"|format((driver.total_cost or 0) / driver.order_count) }} ₸</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+                            <h6 class="text-muted">Нет данных по водителям</h6>
+                            <p class="text-muted">Назначьте водителей на заказы для отображения статистики</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Reports -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-file-alt"></i> Детальные отчеты
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="report-card border border-success rounded p-3">
+                                <h6 class="text-success">
+                                    <i class="fas fa-money-bill-wave"></i> Отчет по затратам
+                                </h6>
+                                <p class="text-muted small mb-2">
+                                    Анализ расходов департамента за выбранный период
+                                </p>
+                                <ul class="list-unstyled small">
+                                    <li>• Общие затраты: {{ "%.2f"|format(stats.total_revenue) }} ₸</li>
+                                    <li>• Средние затраты: {{ "%.2f"|format(stats.avg_cost) }} ₸</li>
+                                    <li>• Разбивка по типам доставки</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="report-card border border-primary rounded p-3">
+                                <h6 class="text-primary">
+                                    <i class="fas fa-truck"></i> Отчет по водителям
+                                </h6>
+                                <p class="text-muted small mb-2">
+                                    Эффективность работы и затраты на водителей
+                                </p>
+                                <ul class="list-unstyled small">
+                                    <li>• Затраты на водителя</li>
+                                    <li>• Соотношение затрат к доставкам</li>
+                                    <li>• Рейтинг эффективности</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="report-card border border-warning rounded p-3">
+                                <h6 class="text-warning">
+                                    <i class="fas fa-route"></i> Анализ маршрутов
+                                </h6>
+                                <p class="text-muted small mb-2">
+                                    Стоимость и эффективность различных направлений
+                                </p>
+                                <ul class="list-unstyled small">
+                                    <li>• Анализ затрат на маршрут</li>
+                                    <li>• Сравнение направлений</li>
+                                    <li>• Затраты на единицу груза</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <button class="btn btn-primary me-2" onclick="exportReport('excel')">
+                            <i class="fas fa-file-excel"></i> Экспорт в Excel
+                        </button>
+                        <button class="btn btn-outline-primary" onclick="exportReport('pdf')">
+                            <i class="fas fa-file-pdf"></i> Экспорт в PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cost Efficiency Metrics -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-calculator"></i> Показатели эффективности
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center mb-3">
+                            <div class="metric-card">
+                                <h4 class="text-success">{{ "%.1f"|format((stats.delivered_orders / stats.total_orders * 100) if stats.total_orders > 0 else 0) }}%</h4>
+                                <small class="text-muted">Доля успешных доставок</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center mb-3">
+                            <div class="metric-card">
+                                <h4 class="text-primary">{{ "%.2f"|format(stats.total_revenue / stats.total_orders if stats.total_orders > 0 else 0) }} ₸</h4>
+                                <small class="text-muted">Средний доход с заказа</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center mb-3">
+                            <div class="metric-card">
+                                <h4 class="text-warning">{{ "%.1f"|format(stats.astana_orders / stats.total_orders * 100 if stats.total_orders > 0 else 0) }}%</h4>
+                                <small class="text-muted">Доля заказов по Астане</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center mb-3">
+                            <div class="metric-card">
+                                <h4 class="text-info">{{ "%.1f"|format(stats.kz_orders / stats.total_orders * 100 if stats.total_orders > 0 else 0) }}%</h4>
+                                <small class="text-muted">Доля межгородских заказов</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Order Type Distribution Chart
+    const ctx = document.getElementById('orderTypeChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Заказы по Астане', 'Межгородские заказы'],
+            datasets: [{
+                data: [{{ stats.astana_orders }}, {{ stats.kz_orders }}],
+                backgroundColor: ['#1cc88a', '#4e73df'],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20
+                    }
+                }
+            }
+        }
+    });
+});
+
+function exportReport(format) {
+    alert(`Экспорт отчета в формате ${format.toUpperCase()} будет доступен в следующей версии системы.`);
+}
+</script>
+{% endblock %}

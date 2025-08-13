@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row justify-content-center text-center">
+            <div class="col-lg-8">
+                <h1 class="hero-title">
+                    Управление логистикой<br>
+                    <span class="text-dark">нового поколения</span>
+                </h1>
+                <p class="hero-subtitle">
+                    Цифровая экосистема для комплексного управления грузоперевозками,<br>
+                    отслеживания доставок и оптимизации логистических процессов
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Service Cards Section -->
+<section class="services-section py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <!-- Smart Tracking Card -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="service-card h-100">
+                    <div class="service-icon service-icon-blue">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <h3 class="service-title">Умное отслеживание</h3>
+                    <p class="service-description">Отслеживайте грузы в реальном времени с точной геолокацией</p>
+                </div>
+            </div>
+
+            <!-- Fast Delivery Card -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="service-card h-100">
+                    <div class="service-icon service-icon-purple">
+                        <i class="fas fa-cube"></i>
+                    </div>
+                    <h3 class="service-title">Быстрая подача заявок</h3>
+                    <p class="service-description">Создавайте заявки за минуты через удобный интерфейс</p>
+                </div>
+            </div>
+
+            <!-- Security Card -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="service-card h-100">
+                    <div class="service-icon service-icon-green">
+                        <i class="fas fa-shield-check"></i>
+                    </div>
+                    <h3 class="service-title">Полная безопасность</h3>
+                    <p class="service-description">Защищенная передача данных и контроль доступа</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Track Order Section -->
+<section class="track-section py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-5 col-md-8">
+                <div class="track-card">
+                    <h2 class="track-title">Отследить доставку</h2>
+                    <form action="{{ url_for('track_result') }}" method="POST" class="track-form">
+                        <div class="mb-3">
+                            <label class="track-label">Номер заявки</label>
+                            <input type="text" class="form-control track-input" name="tracking_number" 
+                                   placeholder="Введите номер заявки (например: AST-2025-001)" 
+                                   value="" autocomplete="off" required>
+                        </div>
+                        <button type="submit" class="btn btn-track w-100">
+                            <i class="fas fa-search me-2"></i>Отследить заявку
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Services Section -->
+<section class="main-services py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Наши услуги</h2>
+            <p class="section-subtitle">Комплексные решения для всех ваших логистических потребностей</p>
+        </div>
+        
+        <div class="row justify-content-center">
+            <!-- Astana Delivery -->
+            <div class="col-lg-6 col-md-12 mb-4">
+                <div class="main-service-card">
+                    <div class="service-header">
+                        <div class="service-icon-main service-icon-green">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <div class="service-header-text">
+                            <h3>Доставка по Астане</h3>
+                            <p>Городские перевозки</p>
+                        </div>
+                    </div>
+                    <ul class="service-list">
+                        <li><i class="fas fa-check"></i> Быстрая доставка в пределах города</li>
+                        <li><i class="fas fa-check"></i> Отслеживание в реальном времени</li>
+                        <li><i class="fas fa-check"></i> Профессиональная обработка грузов</li>
+                    </ul>
+                    <a href="{{ url_for('create_order', order_type='astana') }}" class="btn btn-service btn-service-green w-100">
+                        <i class="fas fa-plus-circle me-2"></i>Создать заявку на доставку
+                    </a>
+                </div>
+            </div>
+
+            <!-- Kazakhstan Delivery -->
+            <div class="col-lg-6 col-md-12 mb-4">
+                <div class="main-service-card">
+                    <div class="service-header">
+                        <div class="service-icon-main service-icon-blue">
+                            <i class="fas fa-plane-departure"></i>
+                        </div>
+                        <div class="service-header-text">
+                            <h3>Межгородские перевозки</h3>
+                            <p>Дальние маршруты</p>
+                        </div>
+                    </div>
+                    <ul class="service-list">
+                        <li><i class="fas fa-check"></i> Доставка по всему Казахстану</li>
+                        <li><i class="fas fa-check"></i> Оптимальные маршруты и сроки</li>
+                        <li><i class="fas fa-check"></i> Полный документооборот</li>
+                    </ul>
+                    <a href="{{ url_for('create_order', order_type='kazakhstan') }}" class="btn btn-service btn-service-blue w-100">
+                        <i class="fas fa-plus-circle me-2"></i>Создать межгородскую заявку
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Contact Section -->
+<section class="contact-section py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Свяжитесь с нами</h2>
+            <p class="section-subtitle">Готовы помочь с вашими логистическими потребностями</p>
+        </div>
+        
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="contact-card">
+                    <h4 class="mb-4">Получите консультацию</h4>
+                    <p class="text-muted mb-4">Наши специалисты помогут выбрать оптимальное решение для ваших грузоперевозок</p>
+                    
+                    <div class="contact-methods">
+                        <div class="contact-method">
+                            <div class="contact-icon phone">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <div>
+                                <strong>+7 (702) 997 00 94</strong>
+                                <br><small class="text-muted">Звонки принимаются 24/7</small>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-method">
+                            <div class="contact-icon email">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div>
+                                <strong>nurbek@creativegroup.kz</strong>
+                                <br><small class="text-muted">Ответим в течение часа</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="advantages-card">
+                    <h5 class="mb-3">Преимущества XPOM-KZ</h5>
+                    
+                    <div class="advantage-item">
+                        <i class="fas fa-check-circle text-success"></i>
+                        <div>
+                            <strong>Цифровое управление</strong>
+                            <small class="d-block text-muted">Полная автоматизация процессов</small>
+                        </div>
+                    </div>
+                    
+                    <div class="advantage-item">
+                        <i class="fas fa-check-circle text-primary"></i>
+                        <div>
+                            <strong>Прозрачность процессов</strong>
+                            <small class="d-block text-muted">Отслеживание на каждом этапе</small>
+                        </div>
+                    </div>
+                    
+                    <div class="advantage-item">
+                        <i class="fas fa-check-circle text-purple"></i>
+                        <div>
+                            <strong>Надежность доставки</strong>
+                            <small class="d-block text-muted">99% выполнения в срок</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

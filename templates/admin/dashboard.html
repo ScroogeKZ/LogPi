@@ -1,0 +1,288 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Панель управления - XPOM-KZ{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-tachometer-alt text-primary"></i>
+            Панель управления
+        </h1>
+        <div class="text-muted">
+            <i class="fas fa-calendar-alt"></i>
+            {{ moment().format('DD.MM.YYYY HH:mm') if moment else '' }}
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card bg-primary text-white shadow">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                Всего заказов
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold">{{ stats.total_orders }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-box fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card bg-warning text-white shadow">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                Новые заявки
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold">{{ stats.new_orders }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card bg-info text-white shadow">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                В процессе
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold">{{ stats.in_progress_orders }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-truck fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card bg-success text-white shadow">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                Доставлено
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold">{{ stats.delivered_orders }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Orders -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-list"></i> Последние заказы
+                    </h6>
+                    <a href="{{ url_for('admin_orders') }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-eye"></i> Все заказы
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_orders %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Номер</th>
+                                        <th>Клиент</th>
+                                        <th>Тип</th>
+                                        <th>Статус</th>
+                                        <th>Создан</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in recent_orders %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ order.tracking_number }}</strong>
+                                        </td>
+                                        <td>
+                                            {{ order.customer_name }}
+                                            <br><small class="text-muted">{{ order.customer_phone | format_phone }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if order.order_type == 'astana' else 'primary' }}">
+                                                {{ 'Астана' if order.order_type == 'astana' else 'Казахстан' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% set status_colors = {
+                                                'new': 'secondary',
+                                                'confirmed': 'info',
+                                                'in_progress': 'warning',
+                                                'delivered': 'success',
+                                                'cancelled': 'danger'
+                                            } %}
+                                            <span class="badge bg-{{ status_colors.get(order.status, 'secondary') }}">
+                                                {{ order.get_status_display() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {{ order.created_at.strftime('%d.%m.%Y %H:%M') }}
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('admin_order_detail', order_id=order.id) }}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Нет заказов</h5>
+                            <p class="text-muted">Заказы будут отображаться здесь</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions & Charts -->
+        <div class="col-xl-4 col-lg-5">
+            <!-- Quick Actions -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-rocket"></i> Быстрые действия
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('admin_orders', status='new') }}" class="btn btn-warning">
+                            <i class="fas fa-clock"></i> Новые заявки ({{ stats.new_orders }})
+                        </a>
+                        <a href="{{ url_for('admin_orders', status='in_progress') }}" class="btn btn-info">
+                            <i class="fas fa-truck"></i> В процессе ({{ stats.in_progress_orders }})
+                        </a>
+                        <a href="{{ url_for('admin_reports') }}" class="btn btn-success">
+                            <i class="fas fa-chart-line"></i> Отчеты
+                        </a>
+                        <a href="{{ url_for('admin_analytics') }}" class="btn btn-primary">
+                            <i class="fas fa-chart-pie"></i> Аналитика
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders Chart -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-bar"></i> Заказы за неделю
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="weeklyOrdersChart" width="100" height="80"></canvas>
+                </div>
+            </div>
+
+            <!-- System Info -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-info-circle"></i> Системная информация
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="system-info">
+                        <div class="info-item">
+                            <strong>Версия системы:</strong>
+                            <span class="badge bg-primary">XPOM-KZ v1.0</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>Статус системы:</strong>
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle"></i> Работает
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <strong>Последнее обновление:</strong>
+                            <small class="text-muted">{{ moment().format('DD.MM.YYYY') if moment else 'Недоступно' }}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load weekly orders chart
+    fetch('{{ url_for("orders_chart_data") }}')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('weeklyOrdersChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(item => item.date),
+                    datasets: [{
+                        label: 'Заказы',
+                        data: data.map(item => item.orders),
+                        borderColor: '#4e73df',
+                        backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error loading chart data:', error);
+            document.getElementById('weeklyOrdersChart').style.display = 'none';
+        });
+});
+</script>
+{% endblock %}

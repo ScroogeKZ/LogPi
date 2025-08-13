@@ -1,0 +1,497 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Аналитика - XPOM-KZ{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-chart-pie text-primary"></i>
+            Аналитический дашборд
+        </h1>
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-primary active" onclick="setTimePeriod('month')">
+                Месяц
+            </button>
+            <button type="button" class="btn btn-outline-primary" onclick="setTimePeriod('quarter')">
+                Квартал
+            </button>
+            <button type="button" class="btn btn-outline-primary" onclick="setTimePeriod('year')">
+                Год
+            </button>
+        </div>
+    </div>
+
+    <!-- Key Performance Indicators -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card bg-gradient-primary text-white shadow">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                Динамика роста
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold">
+                                +{{ "%.1f"|format(15.3) }}%
+                            </div>
+                            <small>По сравнению с прошлым месяцем</small>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-line fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card bg-gradient-success text-white shadow">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                Загруженность водителей
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold">87%</div>
+                            <small>Средняя загрузка в этом месяце</small>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card bg-gradient-info text-white shadow">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                Время выполнения
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold">2.3 дня</div>
+                            <small>Среднее время доставки</small>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card bg-gradient-warning text-white shadow">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">
+                                Индекс удовлетворенности
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold">4.8/5</div>
+                            <small>На основе отзывов клиентов</small>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-star fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Revenue Trend Chart -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-area"></i> Динамика затрат и количества заказов
+                    </h6>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="toggleDataset('orders')">Показать/скрыть заказы</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="toggleDataset('revenue')">Показать/скрыть доходы</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area">
+                        <canvas id="revenueChart" height="320"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Distribution -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-pie"></i> Распределение по статусам
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-pie pt-4 pb-2">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                    <div class="mt-4 text-center small">
+                        {% for status in status_data %}
+                        <span class="mr-2">
+                            <i class="fas fa-circle text-{{ 
+                                'primary' if status.status == 'new' else
+                                'info' if status.status == 'confirmed' else
+                                'warning' if status.status == 'in_progress' else
+                                'success' if status.status == 'delivered' else
+                                'danger'
+                            }}"></i> {{ status.label }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Geographic Analysis -->
+    <div class="row">
+        <div class="col-xl-6 col-lg-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-map-marked-alt"></i> Карта затрат по направлениям
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="map-container" style="height: 300px; background: #f8f9fa; border-radius: 8px; position: relative;">
+                        <div class="d-flex align-items-center justify-content-center h-100">
+                            <div class="text-center">
+                                <i class="fas fa-map fa-3x text-muted mb-3"></i>
+                                <h6 class="text-muted">Интерактивная карта</h6>
+                                <p class="text-muted small">
+                                    Здесь будет отображаться карта с маркерами<br>
+                                    точек погрузки и выгрузки с визуализацией затрат
+                                </p>
+                                <div class="mt-3">
+                                    <span class="badge bg-success me-2">Астана - 65% заказов</span>
+                                    <span class="badge bg-primary">Другие города - 35%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Sample markers for demonstration -->
+                        <div class="position-absolute" style="top: 30%; left: 45%;">
+                            <div class="map-marker" data-bs-toggle="tooltip" title="Астана: 120 заказов">
+                                <i class="fas fa-map-marker-alt text-success fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="position-absolute" style="top: 60%; left: 35%;">
+                            <div class="map-marker" data-bs-toggle="tooltip" title="Караганда: 45 заказов">
+                                <i class="fas fa-map-marker-alt text-primary"></i>
+                            </div>
+                        </div>
+                        <div class="position-absolute" style="top: 70%; left: 55%;">
+                            <div class="map-marker" data-bs-toggle="tooltip" title="Алматы: 38 заказов">
+                                <i class="fas fa-map-marker-alt text-warning"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Route Efficiency Analysis -->
+        <div class="col-xl-6 col-lg-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-route"></i> Анализ эффективности маршрутов
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="route-analysis">
+                        <div class="route-item mb-3 p-3 border rounded">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">Астана → Караганда</h6>
+                                    <small class="text-muted">Среднее время: 4.5 часа</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-success">Высокая эффективность</span>
+                                    <div class="mt-1">
+                                        <small class="text-muted">15,250 ₸/тонна</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="progress mt-2" style="height: 6px;">
+                                <div class="progress-bar bg-success" style="width: 85%"></div>
+                            </div>
+                        </div>
+
+                        <div class="route-item mb-3 p-3 border rounded">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">Астана → Алматы</h6>
+                                    <small class="text-muted">Среднее время: 12 часов</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-warning">Средняя эффективность</span>
+                                    <div class="mt-1">
+                                        <small class="text-muted">22,100 ₸/тонна</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="progress mt-2" style="height: 6px;">
+                                <div class="progress-bar bg-warning" style="width: 65%"></div>
+                            </div>
+                        </div>
+
+                        <div class="route-item mb-3 p-3 border rounded">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">Астана → Шымкент</h6>
+                                    <small class="text-muted">Среднее время: 15 часов</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-danger">Требует оптимизации</span>
+                                    <div class="mt-1">
+                                        <small class="text-muted">28,750 ₸/тонна</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="progress mt-2" style="height: 6px;">
+                                <div class="progress-bar bg-danger" style="width: 45%"></div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 text-center">
+                            <button class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-download"></i> Экспорт анализа
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Analytics Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-table"></i> Детальная аналитика по единице груза
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Направление</th>
+                                    <th>Количество заказов</th>
+                                    <th>Средний вес (кг)</th>
+                                    <th>Стоимость за кг</th>
+                                    <th>Стоимость за м³</th>
+                                    <th>Рентабельность</th>
+                                    <th>Тренд</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <strong>Астана (городские)</strong>
+                                        <br><small class="text-muted">Доставка в пределах города</small>
+                                    </td>
+                                    <td><span class="badge bg-primary">156</span></td>
+                                    <td>485</td>
+                                    <td>45.20 ₸</td>
+                                    <td>12,450 ₸</td>
+                                    <td><span class="badge bg-success">Высокая</span></td>
+                                    <td><i class="fas fa-arrow-up text-success"></i> +12%</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong>Астана → Караганда</strong>
+                                        <br><small class="text-muted">Межгородская доставка</small>
+                                    </td>
+                                    <td><span class="badge bg-primary">42</span></td>
+                                    <td>1,250</td>
+                                    <td>89.30 ₸</td>
+                                    <td>18,900 ₸</td>
+                                    <td><span class="badge bg-success">Высокая</span></td>
+                                    <td><i class="fas fa-arrow-up text-success"></i> +8%</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong>Астана → Алматы</strong>
+                                        <br><small class="text-muted">Межгородская доставка</small>
+                                    </td>
+                                    <td><span class="badge bg-primary">28</span></td>
+                                    <td>1,850</td>
+                                    <td>125.60 ₸</td>
+                                    <td>25,200 ₸</td>
+                                    <td><span class="badge bg-warning">Средняя</span></td>
+                                    <td><i class="fas fa-minus text-warning"></i> 0%</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong>Астана → Шымкент</strong>
+                                        <br><small class="text-muted">Межгородская доставка</small>
+                                    </td>
+                                    <td><span class="badge bg-primary">15</span></td>
+                                    <td>2,100</td>
+                                    <td>158.90 ₸</td>
+                                    <td>32,100 ₸</td>
+                                    <td><span class="badge bg-danger">Низкая</span></td>
+                                    <td><i class="fas fa-arrow-down text-danger"></i> -5%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Revenue and Orders Chart
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    const revenueChart = new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: [
+                {% for item in monthly_data %}
+                '{{ item.month_name }}'{{ ',' if not loop.last }}
+                {% endfor %}
+            ],
+            datasets: [{
+                label: 'Выручка (₸)',
+                data: [
+                    {% for item in monthly_data %}
+                    {{ item.revenue }}{{ ',' if not loop.last }}
+                    {% endfor %}
+                ],
+                borderColor: '#4e73df',
+                backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3,
+                yAxisID: 'y'
+            }, {
+                label: 'Количество заказов',
+                data: [
+                    {% for item in monthly_data %}
+                    {{ item.orders }}{{ ',' if not loop.last }}
+                    {% endfor %}
+                ],
+                borderColor: '#1cc88a',
+                backgroundColor: 'rgba(28, 200, 138, 0.1)',
+                borderWidth: 2,
+                fill: false,
+                tension: 0.3,
+                yAxisID: 'y1'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Выручка (₸)'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Количество заказов'
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            }
+        }
+    });
+
+    // Status Distribution Chart
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [
+                {% for status in status_data %}
+                '{{ status.label }}'{{ ',' if not loop.last }}
+                {% endfor %}
+            ],
+            datasets: [{
+                data: [
+                    {% for status in status_data %}
+                    {{ status.count }}{{ ',' if not loop.last }}
+                    {% endfor %}
+                ],
+                backgroundColor: ['#6c757d', '#17a2b8', '#ffc107', '#28a745', '#dc3545'],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+
+function setTimePeriod(period) {
+    // Update active button
+    document.querySelectorAll('.btn-group .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Here you would typically reload data for the selected period
+    console.log('Loading data for period:', period);
+}
+
+function toggleDataset(dataset) {
+    console.log('Toggling dataset:', dataset);
+    // Implementation would toggle chart dataset visibility
+}
+</script>
+{% endblock %}

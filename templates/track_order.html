@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Отследить заказ - XPOM-KZ{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="track-card-main">
+                <div class="text-center mb-4">
+                    <div class="track-icon">
+                        <i class="fas fa-search-location"></i>
+                    </div>
+                    <h2>Отследить доставку</h2>
+                    <p class="text-muted">Введите номер заявки для получения актуальной информации о статусе доставки</p>
+                </div>
+                
+                <form method="POST" action="{{ url_for('track_result') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-4">
+                        {{ form.tracking_number.label(class="form-label") }}
+                        {{ form.tracking_number(class="form-control form-control-lg text-center") }}
+                        {% if form.tracking_number.errors %}
+                            <div class="invalid-feedback d-block">{{ form.tracking_number.errors[0] }}</div>
+                        {% endif %}
+                        <div class="form-text text-center">
+                            Формат номера: AST-2025-001 или KZ-2025-001
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-gradient w-100 btn-lg">
+                        <i class="fas fa-search"></i> Отследить заявку
+                    </button>
+                </form>
+                
+                <div class="mt-4 p-3 bg-light rounded">
+                    <h6 class="mb-3">
+                        <i class="fas fa-info-circle text-primary"></i> 
+                        Что вы узнаете:
+                    </h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success"></i>
+                            Текущий статус заказа
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success"></i>
+                            Дата создания и обновления
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success"></i>
+                            Информация о водителе (если назначен)
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success"></i>
+                            Ожидаемые даты забора и доставки
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            {% if not current_user.is_authenticated %}
+            <div class="text-center mt-4">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-user-plus"></i> Хотите видеть все свои заказы?
+                        </h5>
+                        <p class="card-text">Зарегистрируйтесь и получите доступ к личному кабинету с историей всех ваших заказов</p>
+                        <a href="{{ url_for('register') }}" class="btn btn-light">
+                            <i class="fas fa-user-plus"></i> Регистрация
+                        </a>
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-light ms-2">
+                            <i class="fas fa-sign-in-alt"></i> Вход
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const trackingInput = document.querySelector('input[name="tracking_number"]');
+    
+    trackingInput.addEventListener('input', function(e) {
+        // Convert to uppercase and format
+        let value = e.target.value.toUpperCase();
+        e.target.value = value;
+    });
+    
+    trackingInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.target.closest('form').submit();
+        }
+    });
+});
+</script>
+{% endblock %}

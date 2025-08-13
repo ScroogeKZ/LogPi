@@ -1,0 +1,273 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Заказ {{ order.tracking_number }} - XPOM-KZ{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-edit text-primary"></i>
+                Редактирование заказа
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Панель управления</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_orders') }}">Заказы</a></li>
+                    <li class="breadcrumb-item active">{{ order.tracking_number }}</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('order_success', tracking_number=order.tracking_number) }}" 
+               target="_blank" class="btn btn-outline-info">
+                <i class="fas fa-eye"></i> Просмотр заказа
+            </a>
+            <a href="{{ url_for('admin_orders') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Назад к списку
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Order Management Form -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog"></i> Управление заказом {{ order.tracking_number }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('admin_update_order', order_id=order.id) }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.status.label(class="form-label required") }}
+                                    {{ form.status(class="form-select") }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.price.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {{ form.price(class="form-control", placeholder="0.00") }}
+                                        <span class="input-group-text">₸</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.driver_id.label(class="form-label") }}
+                            {{ form.driver_id(class="form-select") }}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.pickup_date.label(class="form-label") }}
+                                    {{ form.pickup_date(class="form-control", type="datetime-local") }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.delivery_date.label(class="form-label") }}
+                                    {{ form.delivery_date(class="form-control", type="datetime-local") }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.internal_comments.label(class="form-label") }}
+                            {{ form.internal_comments(class="form-control", rows="4", placeholder="Внутренние комментарии для логистов...") }}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-save"></i> Сохранить изменения
+                            </button>
+                            <button type="button" class="btn btn-outline-danger" onclick="confirmCancel()">
+                                <i class="fas fa-ban"></i> Отменить заказ
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Information -->
+        <div class="col-lg-4">
+            <!-- Order Status -->
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-info-circle"></i> Информация о заказе
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-5">Номер:</dt>
+                        <dd class="col-sm-7"><strong>{{ order.tracking_number }}</strong></dd>
+                        
+                        <dt class="col-sm-5">Тип:</dt>
+                        <dd class="col-sm-7">
+                            <span class="badge bg-{{ 'success' if order.order_type == 'astana' else 'primary' }}">
+                                {{ order.get_type_display() }}
+                            </span>
+                        </dd>
+                        
+                        <dt class="col-sm-5">Создан:</dt>
+                        <dd class="col-sm-7">{{ order.created_at.strftime('%d.%m.%Y %H:%M') }}</dd>
+                        
+                        <dt class="col-sm-5">Обновлен:</dt>
+                        <dd class="col-sm-7">{{ order.updated_at.strftime('%d.%m.%Y %H:%M') }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Customer Information -->
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-user"></i> Информация о клиенте
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">Имя:</dt>
+                        <dd class="col-sm-8">{{ order.customer_name }}</dd>
+                        
+                        <dt class="col-sm-4">Телефон:</dt>
+                        <dd class="col-sm-8">
+                            <a href="tel:{{ order.customer_phone }}">{{ order.customer_phone | format_phone }}</a>
+                        </dd>
+                        
+                        {% if order.customer_email %}
+                        <dt class="col-sm-4">Email:</dt>
+                        <dd class="col-sm-8">
+                            <a href="mailto:{{ order.customer_email }}">{{ order.customer_email }}</a>
+                        </dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Cargo Information -->
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-box"></i> Информация о грузе
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>Описание:</strong></p>
+                    <p class="text-muted">{{ order.cargo_description }}</p>
+                    
+                    {% if order.cargo_weight or order.cargo_volume or order.cargo_dimensions %}
+                    <dl class="row">
+                        {% if order.cargo_weight %}
+                        <dt class="col-sm-4">Вес:</dt>
+                        <dd class="col-sm-8">{{ order.cargo_weight }} кг</dd>
+                        {% endif %}
+                        
+                        {% if order.cargo_volume %}
+                        <dt class="col-sm-4">Объем:</dt>
+                        <dd class="col-sm-8">{{ order.cargo_volume }} м³</dd>
+                        {% endif %}
+                        
+                        {% if order.cargo_dimensions %}
+                        <dt class="col-sm-4">Габариты:</dt>
+                        <dd class="col-sm-8">{{ order.cargo_dimensions }}</dd>
+                        {% endif %}
+                    </dl>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Route Information -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-route"></i> Маршрут доставки
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="route-section">
+                                <h6 class="text-success">
+                                    <i class="fas fa-map-marker-alt"></i> Место забора
+                                </h6>
+                                <address class="mb-2">{{ order.pickup_address }}</address>
+                                {% if order.pickup_contact %}
+                                <p class="mb-1"><strong>Контакт:</strong> {{ order.pickup_contact }}</p>
+                                {% endif %}
+                                {% if order.pickup_phone %}
+                                <p class="mb-0"><strong>Телефон:</strong> {{ order.pickup_phone | format_phone }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="route-section">
+                                <h6 class="text-danger">
+                                    <i class="fas fa-map-marker-alt"></i> Место доставки
+                                </h6>
+                                <address class="mb-2">{{ order.delivery_address }}</address>
+                                {% if order.delivery_contact %}
+                                <p class="mb-1"><strong>Контакт:</strong> {{ order.delivery_contact }}</p>
+                                {% endif %}
+                                {% if order.delivery_phone %}
+                                <p class="mb-0"><strong>Телефон:</strong> {{ order.delivery_phone | format_phone }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function confirmCancel() {
+    if (confirm('Вы уверены, что хотите отменить этот заказ?')) {
+        // Update status to cancelled and submit form
+        document.querySelector('select[name="status"]').value = 'cancelled';
+        document.querySelector('form').submit();
+    }
+}
+
+// Auto-save functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const inputs = form.querySelectorAll('input, select, textarea');
+    
+    inputs.forEach(input => {
+        input.addEventListener('change', function() {
+            // Visual feedback for unsaved changes
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.classList.add('btn-warning');
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Сохранить изменения*';
+        });
+    });
+    
+    // Reset button state after save
+    form.addEventListener('submit', function() {
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.classList.remove('btn-warning');
+        submitBtn.classList.add('btn-success');
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Сохранение...';
+    });
+});
+</script>
+{% endblock %}
